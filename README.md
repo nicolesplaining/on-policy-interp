@@ -64,9 +64,17 @@ aggregated in `results/synthesis_3seed.json`; see [`FINDINGS.md`](FINDINGS.md) f
 the write-up. Robust, seed-consistent signals:
 
 - fixed-corpus SFT drifts **~8–14× more** on general text than the three
-  teacher-supervised regimes (output-KL 0.247 vs 0.02–0.03; ranges disjoint) — H1/H2;
+  teacher-supervised regimes (output-KL 0.247 vs 0.02–0.03; ranges disjoint) —
+  and this **survives a matched-performance re-analysis**, so it isn't just a
+  "trained further" artifact;
+- **on-policy KD does *not* forget less than off-policy KD** — the clean
+  `teacher_kd` vs `onpolicy_kd` test (matched) gives 0.013 vs 0.023. Forgetting
+  tracks *teacher-vs-corpus supervision*, not the on-/off-policy prefix source;
 - teacher supervision (hard / off-policy-soft / on-policy-soft) raises newline
   *decodability* (Δ_newline ≈ 0.80–0.84 vs base 0.565) **without** inducing a
   *causal* handoff (`handoff_frac = 0` everywhere) — decodable ≠ causal;
-- on-policy KD has the best recovery-prefix accuracy;
+- on-policy KD's only edge is recovery-prefix accuracy;
 - parameter-update concentration tracks output drift (r ≈ 0.99).
+
+See [`FINDINGS.md`](FINDINGS.md) for the full per-hypothesis scorecard, including
+the corrected reading of H1/H4.

@@ -228,6 +228,37 @@ def fig_mech_vs_forget(rd, seeds, out):
     fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
 
 
+def fig_matched(rd, seeds, out):
+    """Output-KL at ckpt_100 vs at matched performance, per condition."""
+    fig, ax = plt.subplots(figsize=(9, 5))
+    x = np.arange(len(CONDS)); w = 0.38
+    for j, (kind, lab, hatch) in enumerate([("ckpt_100", "at ckpt_100 (unmatched)", ""),
+                                            ("matched", "at matched rhyme ≈0.86", "//")]):
+        means, lo, hi = [], [], []
+        for c in CONDS:
+            st = seed_stack(rd, "forgetting", c, seeds,
+                            lambda d: d["mean_output_kl"])  # noqa
+            # override tag suffix: reload with the right kind
+            vals = []
+            for s in seeds:
+                d = load(rd, "forgetting", f"{c}_seed{s}_{kind}")
+                if d:
+                    vals.append(d["mean_output_kl"])
+            vals = np.array(vals)
+            means.append(vals.mean()); lo.append(vals.min()); hi.append(vals.max())
+        means, lo, hi = map(np.array, (means, lo, hi))
+        ax.bar(x + (j - 0.5) * w, means, w, label=lab, hatch=hatch,
+               color=[COLORS[c] for c in CONDS], edgecolor="black", linewidth=0.6,
+               alpha=0.7 if j else 1.0,
+               yerr=np.vstack([means - lo, hi - means]), capsize=3)
+    ax.set_xticks(x); ax.set_xticklabels([LABELS[c] for c in CONDS], rotation=20, ha="right")
+    ax.set_ylabel("output-distribution KL vs base")
+    ax.set_title("Forgetting at matched performance (H1/H4 fair test)",
+                 fontsize=12, fontweight="bold")
+    ax.legend(fontsize=9); ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
@@ -244,7 +275,11 @@ def main():
     fig_cka_layers(rd, seeds, f"{od}/fig6_cka_layers.png")
     fig_diversity(rd, seeds, f"{od}/fig7_diversity.png")
     fig_mech_vs_forget(rd, seeds, f"{od}/fig8_mech_vs_forget.png")
-    print(f"Wrote 8 figures to {od}/")
+    if all(load(rd, "forgetting", f"corpus_sft_seed{s}_matched") for s in seeds):
+        fig_matched(rd, seeds, f"{od}/fig9_matched.png")
+        print(f"Wrote 9 figures to {od}/")
+    else:
+        print(f"Wrote 8 figures to {od}/ (matched not found; run scripts/run_matched.sh)")
 
 
 if __name__ == "__main__":

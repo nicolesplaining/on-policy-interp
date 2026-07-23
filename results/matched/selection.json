@@ -1,0 +1,90 @@
+{
+  "threshold": 0.85,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "selection": {
+    "corpus_sft": {
+      "0": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.88,
+        "step": 15,
+        "reached": true
+      },
+      "1": {
+        "tag": "ckpt_025",
+        "val_rhyme": 0.93,
+        "step": 38,
+        "reached": true
+      },
+      "2": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.88,
+        "step": 15,
+        "reached": true
+      }
+    },
+    "teacher_sft": {
+      "0": {
+        "tag": "ckpt_025",
+        "val_rhyme": 0.855,
+        "step": 38,
+        "reached": true
+      },
+      "1": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.905,
+        "step": 15,
+        "reached": true
+      },
+      "2": {
+        "tag": "ckpt_025",
+        "val_rhyme": 0.855,
+        "step": 38,
+        "reached": true
+      }
+    },
+    "teacher_kd": {
+      "0": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.875,
+        "step": 15,
+        "reached": true
+      },
+      "1": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.89,
+        "step": 15,
+        "reached": true
+      },
+      "2": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.87,
+        "step": 15,
+        "reached": true
+      }
+    },
+    "onpolicy_kd": {
+      "0": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.875,
+        "step": 15,
+        "reached": true
+      },
+      "1": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.875,
+        "step": 15,
+        "reached": true
+      },
+      "2": {
+        "tag": "ckpt_010",
+        "val_rhyme": 0.85,
+        "step": 15,
+        "reached": true
+      }
+    }
+  }
+}

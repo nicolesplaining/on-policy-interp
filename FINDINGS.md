@@ -46,9 +46,27 @@ above the others' across seeds.
 **Fixed-corpus SFT drifts ~8–14× more on general (non-poetry) text** than the
 three teacher-supervised regimes — seed ranges do not overlap. The
 teacher-supervised regimes stay far more task-selective; capability probes are
-essentially unchanged for all. This is the strongest and most robust signal in
-the study, supporting **H1/H2**: static off-policy corpus SFT interferes broadly,
-teacher supervision (including on-policy) does not.
+essentially unchanged for all.
+
+**Important — this gap is teacher-vs-corpus, not on-policy-vs-off-policy.** The
+clean test for an on-policy effect is `teacher_kd` vs `onpolicy_kd` (same
+teacher, same reverse-KL objective, differing *only* in prefix source; H4). On
+that comparison **on-policy did not forget less** — if anything marginally more:
+
+| | output-KL | min-CKA |
+|---|---|---|
+| teacher_kd (off-policy soft KD) | **0.020** [.017,.023] | 0.9968 |
+| onpolicy_kd (on-policy soft KD) | 0.030 [.028,.032] | 0.9964 |
+
+So the large forgetting difference is driven by **learning from a fixed external
+corpus vs from the teacher**, not by whether the prefixes are student- or
+teacher-generated. Two confounds keep this from being a clean law (see Caveats):
+(1) the conditions are compared at ckpt_100, *not* at matched rhyme accuracy —
+`corpus_sft` reached 0.956 vs ~0.87, i.e. it trained "further" toward a sharper
+target; (2) all teacher-supervised regimes forget so little (KL 0.02–0.03) that
+there is little room to resolve an on/off-policy difference at this budget. The
+matched-performance re-analysis (Section "Matched performance" below) addresses
+(1) directly.
 
 ## Diversity (Section 11.3, H5)
 
@@ -115,17 +133,28 @@ causal comparison is the natural follow-up.)
 
 ### Scorecard against the hypotheses
 
-- **H1 (on-policy ≤ drift):** supported — on-policy KD and the off-policy KD
-  regimes drift ~10× less than fixed-corpus SFT; CKA ≈ 1.0.
+- **H1 (on-policy causes less general drift):** **not supported as stated.**
+  On the isolating comparison (`teacher_kd` vs `onpolicy_kd`), on-policy did not
+  forget less. What *is* strongly supported is a weaker claim the outline also
+  makes: teacher-distillation regimes (any of them) drift far less than
+  fixed-corpus SFT. The reduction is attributable to teacher/soft supervision,
+  not to the on-policy state distribution per se.
 - **H2 (static SFT reorganizes):** supported *representationally* for
   `corpus_sft` (Δ_newline collapses, peak moves early); not as a *causal* handoff
-  (none forms at 4B).
+  (none forms at 4B). Caveat: confounded with the templated corpus and with not
+  being matched-performance.
 - **H3 (teacher-trace ≠ generic SFT):** supported — teacher_sft patterns with the
   KD regimes (high Δ_newline, low drift), not with corpus_sft.
-- **H4 (prefix source, divergence/teacher held fixed):** teacher_kd vs
-  onpolicy_kd are close on most axes at 150 steps; on-policy's edge appears in
-  recovery and (marginally) CKA, not yet in the planning-site mechanism.
+- **H4 (prefix source, divergence/teacher held fixed):** teacher_kd ≈ onpolicy_kd
+  on forgetting and mechanism at this budget; on-policy's only edge is recovery
+  accuracy. No evidence here that the student-visited state distribution changes
+  the learned mechanism or reduces drift.
 - **H5 (reverse-KL diversity collapse):** not observed.
+
+The prior behavioral result that motivated H1 typically compares *on-policy
+distillation vs SFT on a fixed dataset* — a comparison that confounds
+"on-policy" with "teacher/soft supervision." Our decomposition suggests the
+forgetting benefit lives in the latter.
 
 ## Caveats & next steps
 
@@ -139,6 +168,38 @@ causal comparison is the natural follow-up.)
 - No 4B causal handoff emerged; repeating with a larger student (or the 27B as
   student) is the way to probe the Section-16 mechanistic-inheritance question.
 
+## Matched performance (Section 10.2) — the fair forgetting test
+
+The ckpt_100 comparison is confounded: `corpus_sft` trained "further" (0.956 vs
+~0.87 rhyme). So we re-selected, per seed, each condition's **earliest
+longitudinal checkpoint reaching rhyme ≥ 0.85** and re-measured forgetting there.
+Selected checkpoints are early (step 15–38); test-set rhyme is now within
+0.84–0.89 for all conditions.
+
+| condition | matched rhyme | matched output-KL | matched min-CKA | (ckpt_100 output-KL) |
+|---|---|---|---|---|
+| corpus_sft | 0.891 | 0.194 [.167,.244] | 0.9878 | 0.247 |
+| teacher_sft | 0.868 | 0.022 [.016,.025] | 0.9953 | 0.029 |
+| teacher_kd | 0.856 | **0.013 [.011,.014]** | 0.9985 | 0.020 |
+| onpolicy_kd | 0.837 | 0.023 [.022,.024] | 0.9977 | 0.030 |
+
+Two conclusions survive the fair test:
+
+1. **On-policy KD still does not reduce forgetting.** `teacher_kd` (off-policy
+   soft KD) forgets the *least* — 0.013 vs on-policy's 0.023, and the seed ranges
+   are disjoint — despite on-policy sitting at slightly *lower* rhyme accuracy
+   (so it isn't "trained more"). The H1/H4 on-policy claim is **not supported**
+   even after matching performance.
+2. **The corpus-vs-teacher gap is real, not just a performance artifact.**
+   Matching drops `corpus_sft`'s drift (0.247 → 0.194) but it remains ~8–15×
+   above every teacher-supervised regime. Learning from a fixed external corpus
+   drifts more than teacher distillation *at equal task accuracy*.
+
+![Matched-performance forgetting](figures/fig9_matched.png)
+
+Reproduce: `python -m analysis.matched_perf --threshold 0.85` then
+`scripts/run_matched.sh`. Selection manifest: `results/matched/selection.json`.
+
 ## Figures
 
 | file | shows |
@@ -151,6 +212,7 @@ causal comparison is the natural follow-up.)
 | `figures/fig6_cka_layers.png` | per-layer representation drift vs base |
 | `figures/fig7_diversity.png` | distinct-2 / self-BLEU (H5) |
 | `figures/fig8_mech_vs_forget.png` | update concentration vs output drift (r≈0.99) |
+| `figures/fig9_matched.png` | forgetting at ckpt_100 vs matched performance (H1/H4 fair test) |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,

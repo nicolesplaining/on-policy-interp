@@ -1,0 +1,30 @@
+{
+  "model": "runs/corpus_sft_seed1/ckpt_025",
+  "tag": "corpus_sft_seed1_matched",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.922,
+    "valid_couplet_rate": 0.922,
+    "ci_low": 0.8951458937794419,
+    "ci_high": 0.9424189281804758
+  },
+  "test_heldout_family": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.932,
+    "valid_couplet_rate": 0.932,
+    "ci_low": 0.9064785429161282,
+    "ci_high": 0.9509337866731715
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.786,
+    "valid_couplet_rate": 0.786,
+    "ci_low": 0.7479411410548613,
+    "ci_high": 0.819697577145462
+  }
+}

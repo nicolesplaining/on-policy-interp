@@ -1,0 +1,30 @@
+{
+  "model": "runs/onpolicy_kd_seed1/ckpt_010",
+  "tag": "onpolicy_kd_seed1_matched",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.838,
+    "valid_couplet_rate": 0.838,
+    "ci_low": 0.8031470479440461,
+    "ci_high": 0.8676987099290632
+  },
+  "test_heldout_family": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.892,
+    "valid_couplet_rate": 0.892,
+    "ci_low": 0.8617447145307382,
+    "ci_high": 0.9162775845410336
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.736,
+    "valid_couplet_rate": 0.736,
+    "ci_low": 0.6956683729184137,
+    "ci_high": 0.7727328071349999
+  }
+}
