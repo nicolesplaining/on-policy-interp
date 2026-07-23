@@ -8,6 +8,15 @@ operating point (150 steps; the task saturates quickly, as Section 5 anticipated
 not the full 600-step budget — but every effect below is consistent in direction
 across all three seeds.
 
+Figures are in [`figures/`](figures/) (regenerate with
+`python -m analysis.make_figures --seeds 0 1 2`).
+
+**The two headline results:**
+
+![Forgetting](figures/fig1_forgetting.png)
+
+![Decodable vs causal](figures/fig3_decodable_vs_causal.png)
+
 ## Behavioral (Section 11)
 
 | condition | test-id rhyme | held-out family | recovery |
@@ -74,6 +83,12 @@ same layer, regardless of hard/soft or off-/on-policy. **`corpus_sft` alone**
 weakens the newline signal and shifts its peak to an early layer — a qualitatively
 different representational reorganization.
 
+![Per-layer newline decodability](figures/fig4_probe_layers.png)
+
+Teacher supervision amplifies the base student's existing late-layer newline site
+(gray dashed → colored curves peak ~0.85 at L26); `corpus_sft` (red) abandons it,
+staying flat at the newline in late layers.
+
 **Patching — causal reliance (handoff H = C_newline − C_rhyme_word):**
 
 `handoff_frac = 0` for every condition and every seed. H stays negative across
@@ -124,6 +139,19 @@ causal comparison is the natural follow-up.)
 - No 4B causal handoff emerged; repeating with a larger student (or the 27B as
   student) is the way to probe the Section-16 mechanistic-inheritance question.
 
+## Figures
+
+| file | shows |
+|---|---|
+| `figures/fig1_forgetting.png` | output-KL + CKA per condition (H1) |
+| `figures/fig2_behavioral.png` | rhyme accuracy by split (test / held-out / recovery) |
+| `figures/fig3_decodable_vs_causal.png` | Δ_newline (decodable) vs handoff H (causal) |
+| `figures/fig4_probe_layers.png` | per-layer newline family-decodability |
+| `figures/fig5_patching_layers.png` | per-layer causal C: newline vs rhyme word |
+| `figures/fig6_cka_layers.png` | per-layer representation drift vs base |
+| `figures/fig7_diversity.png` | distinct-2 / self-BLEU (H5) |
+| `figures/fig8_mech_vs_forget.png` | update concentration vs output drift (r≈0.99) |
+
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
-checkpoints + `history.json` under `runs/`._
+figures under `figures/`, checkpoints + `history.json` under `runs/`._
