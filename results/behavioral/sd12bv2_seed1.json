@@ -1,0 +1,30 @@
+{
+  "model": "runs12b_selfdistill_v2/onpolicy_kd_seed1/ckpt_100",
+  "tag": "sd12bv2_seed1",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.822,
+    "valid_couplet_rate": 0.822,
+    "ci_low": 0.7860541079213073,
+    "ci_high": 0.853035637744791
+  },
+  "test_heldout_family": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.914,
+    "valid_couplet_rate": 0.914,
+    "ci_low": 0.8861596159077154,
+    "ci_high": 0.9355271999486967
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.75,
+    "valid_couplet_rate": 0.75,
+    "ci_low": 0.7102355648988187,
+    "ci_high": 0.7859521258357297
+  }
+}

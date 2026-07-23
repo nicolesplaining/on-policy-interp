@@ -81,6 +81,12 @@ def main():
                     help="8-bit AdamW (fits a 12B student full-FT on one 80GB GPU).")
     ap.add_argument("--batch_size", type=int, default=None,
                     help="Override matched batch size (e.g. smaller for a big student).")
+    ap.add_argument("--grad_accum", type=int, default=None,
+                    help="Override grad-accum steps (raise effective batch to "
+                         "stabilize on-policy KD without more memory).")
+    ap.add_argument("--lr", type=float, default=None, help="Override learning rate.")
+    ap.add_argument("--rollout_temp", type=float, default=None,
+                    help="Override on-policy rollout sampling temperature.")
     args = ap.parse_args()
 
     cond = CONDITIONS[args.condition]
@@ -89,6 +95,12 @@ def main():
         cfg.max_steps = args.max_steps
     if args.batch_size is not None:
         cfg.batch_size = args.batch_size
+    if args.grad_accum is not None:
+        cfg.grad_accum = args.grad_accum
+    if args.lr is not None:
+        cfg.lr = args.lr
+    if args.rollout_temp is not None:
+        cfg.rollout_temperature = args.rollout_temp
 
     set_seed(cfg.seed)
     out_dir = os.path.join(args.out_root, f"{cond.name}_seed{cfg.seed}")

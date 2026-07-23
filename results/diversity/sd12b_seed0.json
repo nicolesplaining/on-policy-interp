@@ -1,0 +1,15 @@
+{
+  "model": "runs12b_selfdistill/onpolicy_kd_seed0/ckpt_100",
+  "tag": "sd12b_seed0",
+  "n_prompts": 300,
+  "n_samples": 8,
+  "temperature": 0.8,
+  "unique_final_words": 543,
+  "final_word_entropy_bits": 8.213458698116003,
+  "final_word_type_token_ratio": 0.22625,
+  "distinct_1": 0.05181409295352324,
+  "distinct_2": 0.1483012259194396,
+  "self_bleu": 0.0801260768126346,
+  "repeated_template_frac": 0.08958333333333333,
+  "mean_rhyme_accuracy": 0.75625
+}
