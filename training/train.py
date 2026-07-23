@@ -72,6 +72,13 @@ def main():
     ap.add_argument("--shard_student", action="store_true",
                     help="Spread the student across visible GPUs for full-FT of a "
                          "12B+ model (naive model parallelism).")
+    ap.add_argument("--student_gpus", default=None,
+                    help="Comma list of local GPU indices the sharded student may "
+                         "use (others reserved, e.g. for an online teacher).")
+    ap.add_argument("--shard_mem_gib", type=int, default=70,
+                    help="Per-GPU memory cap for the sharded student.")
+    ap.add_argument("--opt8bit", action="store_true",
+                    help="8-bit AdamW (fits a 12B student full-FT on one 80GB GPU).")
     ap.add_argument("--batch_size", type=int, default=None,
                     help="Override matched batch size (e.g. smaller for a big student).")
     args = ap.parse_args()
@@ -95,10 +102,18 @@ def main():
     # --- student ---
     if args.shard_student:
         # Full-FT a 12B+ student spread across GPUs (naive model parallelism).
+        max_mem = None
+        if args.student_gpus:
+            sg = {int(x) for x in args.student_gpus.split(",")}
+            n_vis = torch.cuda.device_count()
+            max_mem = {i: (f"{args.shard_mem_gib}GiB" if i in sg else "0GiB")
+                       for i in range(n_vis)}
         student, tokenizer, adapter = load_model(
-            args.student_model, dtype=dtype, for_training=True, shard=True)
+            args.student_model, dtype=dtype, for_training=True, shard=True,
+            max_memory=max_mem)
         device = str(adapter.get_input_device())
-        print(f"Sharded student across GPUs; input device={device}", flush=True)
+        print(f"Sharded student across GPUs (max_mem={max_mem}); input device={device}",
+              flush=True)
     else:
         student, tokenizer, adapter = load_model(args.student_model, dtype=dtype, for_training=True)
         student.to(device)
@@ -136,7 +151,7 @@ def main():
                         collate_fn=collate, drop_last=True)
     print(f"Dataset: {len(ds)} examples | {len(loader)} batches/epoch", flush=True)
 
-    optim = C.build_optimizer(student, cfg)
+    optim = C.build_optimizer(student, cfg, opt8bit=args.opt8bit)
     sched = C.build_scheduler(optim, cfg)
     ckpt_map = C.checkpoint_steps(CHECKPOINT_FRACTIONS, cfg.max_steps)
 

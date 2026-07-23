@@ -157,7 +157,16 @@ def kd_loss(student_logits: torch.Tensor, teacher_logits: torch.Tensor,
 # Optimizer / schedule
 # ---------------------------------------------------------------------------
 
-def build_optimizer(model, cfg):
+def build_optimizer(model, cfg, opt8bit: bool = False):
+    """AdamW; ``opt8bit`` uses bitsandbytes 8-bit AdamW to shrink optimizer state
+    (~4x), letting a 12B student full-FT on a single 80GB GPU without the slow
+    naive-model-parallel bubble."""
+    if opt8bit:
+        import bitsandbytes as bnb
+        return bnb.optim.AdamW8bit(
+            model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay,
+            betas=(0.9, 0.95),
+        )
     return torch.optim.AdamW(
         model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay,
         betas=(0.9, 0.95),
