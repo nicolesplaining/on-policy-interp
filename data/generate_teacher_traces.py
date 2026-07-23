@@ -98,6 +98,34 @@ def generate_and_score(model, tokenizer, adapter, prompt, max_new_tokens,
     return continuation, target_ids, topk_ids, topk_lp, second_word
 
 
+@torch.no_grad()
+def generate_hard_batch(model, tokenizer, adapter, batch_prompts, max_new_tokens,
+                        temperature):
+    """Batched hard-target generation (no soft caching). Returns list of
+    ``(continuation, second_word)`` per prompt, each truncated at the second line."""
+    device = adapter.get_input_device()
+    enc = tokenizer(batch_prompts, return_tensors="pt", padding=True,
+                    padding_side="left").to(device)
+    gen = model.generate(
+        **enc, max_new_tokens=max_new_tokens,
+        do_sample=temperature > 0, temperature=temperature if temperature > 0 else None,
+        pad_token_id=tokenizer.pad_token_id,
+    )
+    plen = enc["input_ids"].shape[1]
+    out = []
+    for row in gen:
+        cont_ids = row[plen:]
+        # truncate at first newline token (inclusive)
+        cut = cont_ids.shape[0]
+        for j in range(cont_ids.shape[0]):
+            if "\n" in tokenizer.decode(cont_ids[j:j + 1]):
+                cut = j + 1
+                break
+        cont = tokenizer.decode(cont_ids[:cut], skip_special_tokens=True)
+        out.append((cont, R.extract_second_line_word_with_newline(cont)))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--prompts", default="data/prompt_pool/train.jsonl")
@@ -109,6 +137,8 @@ def main():
     ap.add_argument("--no_soft", action="store_true",
                     help="Skip cached top-K soft targets (much faster; training "
                          "uses the online teacher, so soft targets are optional).")
+    ap.add_argument("--batch_size", type=int, default=64,
+                    help="Batched generation size for the --no_soft fast path.")
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num_shards", type=int, default=1)
     ap.add_argument("--limit", type=int, default=None)
@@ -128,40 +158,56 @@ def main():
 
     hard_records, soft_records = [], []
     n_valid = 0
-    for i, rec in enumerate(prompts):
-        prompt = rec["prompt"]
-        try:
-            cont, target_ids, topk_ids, topk_lp, second_word = generate_and_score(
-                model, tokenizer, adapter, prompt,
-                args.max_new_tokens, args.temperature, args.top_k,
-                want_soft=not args.no_soft,
-            )
-        except Exception as e:  # keep the shard alive on a bad example
-            print(f"  [{i}] error: {e}", flush=True)
-            continue
 
-        rhymes = R.do_rhyme(rec["rhyme_word"], second_word or "")
-        hard_records.append({
-            "id": rec["id"],
-            "prompt": prompt,
-            "target": cont,
-            "rhyme_word": rec["rhyme_word"],
-            "second_word": second_word,
-            "rhyme_family": rec["rhyme_family"],
-            "teacher_rhymes": bool(rhymes),
-        })
-        soft_records.append({
-            "id": rec["id"],
-            "prompt": prompt,
-            "target_ids": target_ids,
-            "topk_ids": topk_ids,
-            "topk_logprobs": topk_lp,
-        })
-        n_valid += 1
-        if (i + 1) % args.log_every == 0:
-            rate = sum(h["teacher_rhymes"] for h in hard_records) / len(hard_records)
-            print(f"  [{i+1}/{len(prompts)}] running teacher rhyme rate={rate:.3f}",
-                  flush=True)
+    if args.no_soft:
+        # Fast batched path (hard targets only).
+        for start in range(0, len(prompts), args.batch_size):
+            chunk = prompts[start:start + args.batch_size]
+            try:
+                outs = generate_hard_batch(
+                    model, tokenizer, adapter, [r["prompt"] for r in chunk],
+                    args.max_new_tokens, args.temperature)
+            except Exception as e:
+                print(f"  [batch {start}] error: {e}", flush=True)
+                continue
+            for rec, (cont, second_word) in zip(chunk, outs):
+                rhymes = R.do_rhyme(rec["rhyme_word"], second_word or "")
+                hard_records.append({
+                    "id": rec["id"], "prompt": rec["prompt"], "target": cont,
+                    "rhyme_word": rec["rhyme_word"], "second_word": second_word,
+                    "rhyme_family": rec["rhyme_family"], "teacher_rhymes": bool(rhymes),
+                })
+                n_valid += 1
+            if (start // args.batch_size) % max(1, args.log_every // args.batch_size) == 0:
+                rate = sum(h["teacher_rhymes"] for h in hard_records) / max(1, len(hard_records))
+                print(f"  [{len(hard_records)}/{len(prompts)}] running teacher rhyme "
+                      f"rate={rate:.3f}", flush=True)
+    else:
+        for i, rec in enumerate(prompts):
+            prompt = rec["prompt"]
+            try:
+                cont, target_ids, topk_ids, topk_lp, second_word = generate_and_score(
+                    model, tokenizer, adapter, prompt,
+                    args.max_new_tokens, args.temperature, args.top_k, want_soft=True,
+                )
+            except Exception as e:  # keep the shard alive on a bad example
+                print(f"  [{i}] error: {e}", flush=True)
+                continue
+            rhymes = R.do_rhyme(rec["rhyme_word"], second_word or "")
+            hard_records.append({
+                "id": rec["id"], "prompt": prompt, "target": cont,
+                "rhyme_word": rec["rhyme_word"], "second_word": second_word,
+                "rhyme_family": rec["rhyme_family"], "teacher_rhymes": bool(rhymes),
+            })
+            soft_records.append({
+                "id": rec["id"], "prompt": prompt, "target_ids": target_ids,
+                "topk_ids": topk_ids, "topk_logprobs": topk_lp,
+            })
+            n_valid += 1
+            if (i + 1) % args.log_every == 0:
+                rate = sum(h["teacher_rhymes"] for h in hard_records) / len(hard_records)
+                print(f"  [{i+1}/{len(prompts)}] running teacher rhyme rate={rate:.3f}",
+                      flush=True)
 
     os.makedirs(args.out_dir, exist_ok=True)
     hard_path = os.path.join(args.out_dir, f"teacher_sft.shard{args.shard}.jsonl")
