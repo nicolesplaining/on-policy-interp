@@ -13,9 +13,12 @@ python data/build_prompt_pool.py --n_train 10000 --n_val 1000 --n_test_id 1000 \
 python data/build_corpus_sft.py
 
 echo "Launching teacher-trace generation on 4 GPUs..."
+# --no_soft: training scores prefixes with the online teacher, so cached top-K
+# soft targets are optional. Drop --no_soft to also cache them (much slower) for
+# probe target #4 / analysis.
 for S in 0 1 2 3; do
   CUDA_VISIBLE_DEVICES=$S python data/generate_teacher_traces.py \
-    --num_shards 4 --shard "$S" --log_every 200 > "$LOG/teacher_shard$S.log" 2>&1 &
+    --num_shards 4 --shard "$S" --no_soft --log_every 400 > "$LOG/teacher_shard$S.log" 2>&1 &
 done
 wait
 

@@ -35,11 +35,14 @@ from opi.io_utils import read_jsonl, write_jsonl  # noqa: E402
 
 @torch.no_grad()
 def generate_and_score(model, tokenizer, adapter, prompt, max_new_tokens,
-                       temperature, top_k):
-    """Sample a second line and cache teacher top-K logprobs over its tokens.
+                       temperature, top_k, want_soft=True):
+    """Sample a second line and (optionally) cache teacher top-K logprobs.
 
-    Returns ``(target_text, target_ids, topk_ids[T,K], topk_logprobs[T,K])``
-    where positions run over the generated (second-line) tokens.
+    Returns ``(target_text, target_ids, topk_ids[T,K], topk_logprobs[T,K], second_word)``.
+    With ``want_soft=False`` the extra teacher-forced forward pass is skipped
+    (much faster); the soft tensors are returned empty. Training uses only the
+    hard target text, since both KD conditions score prefixes with the online
+    teacher; the cached soft targets are for optional probe/analysis use.
     """
     device = adapter.get_input_device()
     enc = tokenizer(prompt, return_tensors="pt").to(device)
@@ -67,6 +70,12 @@ def generate_and_score(model, tokenizer, adapter, prompt, max_new_tokens,
     full_ids = full_ids[: prompt_len + cut]
     continuation = tokenizer.decode(gen_ids, skip_special_tokens=True)
     second_word = R.extract_second_line_word_with_newline(continuation)
+
+    if not want_soft:
+        target_ids = [int(t.item()) for t in gen_ids]
+        empty_i = torch.zeros(0, top_k, dtype=torch.int32)
+        empty_f = torch.zeros(0, top_k, dtype=torch.float16)
+        return continuation, target_ids, empty_i, empty_f, second_word
 
     # Teacher-forced forward over the (truncated) sequence to get per-position logits.
     out = model(full_ids.unsqueeze(0))
@@ -97,6 +106,9 @@ def main():
     ap.add_argument("--max_new_tokens", type=int, default=20)
     ap.add_argument("--temperature", type=float, default=0.8)
     ap.add_argument("--top_k", type=int, default=64)
+    ap.add_argument("--no_soft", action="store_true",
+                    help="Skip cached top-K soft targets (much faster; training "
+                         "uses the online teacher, so soft targets are optional).")
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num_shards", type=int, default=1)
     ap.add_argument("--limit", type=int, default=None)
@@ -122,6 +134,7 @@ def main():
             cont, target_ids, topk_ids, topk_lp, second_word = generate_and_score(
                 model, tokenizer, adapter, prompt,
                 args.max_new_tokens, args.temperature, args.top_k,
+                want_soft=not args.no_soft,
             )
         except Exception as e:  # keep the shard alive on a bad example
             print(f"  [{i}] error: {e}", flush=True)
