@@ -89,7 +89,10 @@ def main():
     student, tokenizer, adapter = load_model(args.student_model, dtype=dtype, for_training=True)
     student.to(device)
     if cfg.grad_checkpointing:
-        student.gradient_checkpointing_enable()
+        # use_reentrant=False so gradients flow correctly even when the module
+        # input (token ids from a sampled rollout) does not itself require grad.
+        student.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={"use_reentrant": False})
     student.config.use_cache = False
     student.train()
 
@@ -120,7 +123,7 @@ def main():
     print(f"Dataset: {len(ds)} examples | {len(loader)} batches/epoch", flush=True)
 
     optim = C.build_optimizer(student, cfg)
-    sched = C.build_scheduler(student, cfg)
+    sched = C.build_scheduler(optim, cfg)
     ckpt_map = C.checkpoint_steps(CHECKPOINT_FRACTIONS, cfg.max_steps)
 
     history = {"condition": cond.name, "seed": cfg.seed, "steps": [], "loss": [],

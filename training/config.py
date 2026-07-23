@@ -69,8 +69,8 @@ CONDITIONS = {
         name="teacher_kd",
         prefix_source="teacher",
         objective="soft_kd",
-        data="data/teacher_traces/teacher_soft.pt",
-        description="Off-policy soft KD on fixed teacher prefixes (cached top-K).",
+        data="data/teacher_traces/teacher_sft.jsonl",
+        description="Off-policy soft KD: online teacher reverse-KL on fixed teacher prefixes.",
     ),
     "onpolicy_kd": Condition(
         name="onpolicy_kd",
