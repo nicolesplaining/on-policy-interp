@@ -69,12 +69,19 @@ def main():
     ap.add_argument("--max_steps", type=int, default=None)
     ap.add_argument("--kd_reverse", type=int, default=1, help="1=reverse KL, 0=forward KL")
     ap.add_argument("--val", default="data/prompt_pool/val.jsonl")
+    ap.add_argument("--shard_student", action="store_true",
+                    help="Spread the student across visible GPUs for full-FT of a "
+                         "12B+ model (naive model parallelism).")
+    ap.add_argument("--batch_size", type=int, default=None,
+                    help="Override matched batch size (e.g. smaller for a big student).")
     args = ap.parse_args()
 
     cond = CONDITIONS[args.condition]
     cfg = TrainConfig(seed=args.seed)
     if args.max_steps is not None:
         cfg.max_steps = args.max_steps
+    if args.batch_size is not None:
+        cfg.batch_size = args.batch_size
 
     set_seed(cfg.seed)
     out_dir = os.path.join(args.out_root, f"{cond.name}_seed{cfg.seed}")
@@ -86,8 +93,15 @@ def main():
           f"steps={cfg.max_steps} obj={cond.objective} ===", flush=True)
 
     # --- student ---
-    student, tokenizer, adapter = load_model(args.student_model, dtype=dtype, for_training=True)
-    student.to(device)
+    if args.shard_student:
+        # Full-FT a 12B+ student spread across GPUs (naive model parallelism).
+        student, tokenizer, adapter = load_model(
+            args.student_model, dtype=dtype, for_training=True, shard=True)
+        device = str(adapter.get_input_device())
+        print(f"Sharded student across GPUs; input device={device}", flush=True)
+    else:
+        student, tokenizer, adapter = load_model(args.student_model, dtype=dtype, for_training=True)
+        student.to(device)
     if cfg.grad_checkpointing:
         # use_reentrant=False so gradients flow correctly even when the module
         # input (token ids from a sampled rollout) does not itself require grad.
@@ -156,9 +170,9 @@ def main():
             if cond.objective == "hard_ce":
                 input_ids = batch["input_ids"].to(device)
                 attn = batch["attention_mask"].to(device)
-                labels = batch["labels"].to(device)
                 out = student(input_ids=input_ids, attention_mask=attn)
-                loss = C.hard_ce_loss(out.logits, labels)
+                # labels must sit on the logits' device (last shard when sharded)
+                loss = C.hard_ce_loss(out.logits, batch["labels"].to(out.logits.device))
 
             else:  # soft_kd
                 if cond.prefix_source == "student":
@@ -173,8 +187,9 @@ def main():
                     lmask = O.sft_labels_to_mask(batch["labels"].to(device))
 
                 s_out = student(input_ids=input_ids, attention_mask=attn)
-                t_logits = teacher.logits(input_ids, attn, out_device=device)
-                loss = C.kd_loss(s_out.logits, t_logits, lmask,
+                ldev = s_out.logits.device
+                t_logits = teacher.logits(input_ids, attn, out_device=ldev)
+                loss = C.kd_loss(s_out.logits, t_logits, lmask.to(ldev),
                                  temperature=cfg.kd_temperature, reverse=reverse)
 
             (loss / cfg.grad_accum).backward()

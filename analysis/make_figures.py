@@ -228,6 +228,75 @@ def fig_mech_vs_forget(rd, seeds, out):
     fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
 
 
+def _per_pair_matrix(rd, tag, seeds, key):
+    """(n_layers, n_pairs) corrupt-rhyme matrix, pooling pairs across seeds.
+
+    ``key`` is "newline" or "rhyme_word". Falls back to a single un-seeded file
+    (e.g. base_teacher / base12b)."""
+    import glob as _glob
+    paths = sorted(_glob.glob(os.path.join(rd, "patching", f"{tag}_seed*_ckpt_100.json")))
+    if not paths:
+        p = os.path.join(rd, "patching", f"{tag}.json")
+        paths = [p] if os.path.exists(p) else []
+    cols = []
+    for p in paths:
+        d = json.load(open(p))
+        for pair in d["pairs"]:
+            cols.append(pair["C"][key])
+    if not cols:
+        return None
+    return np.array(cols).T  # (n_layers, n_pairs*seeds)
+
+
+def _cluster_bootstrap(mat, n_boot=10000, seed=0):
+    rng = np.random.default_rng(seed)
+    n_layers, n_pairs = mat.shape
+    idx = rng.integers(0, n_pairs, size=(n_boot, n_pairs))
+    boot = mat[:, idx].mean(axis=2).T
+    return mat.mean(1), np.percentile(boot, 2.5, 0), np.percentile(boot, 97.5, 0)
+
+
+def fig_patching_perlayer(rd, seeds, out):
+    """look-ahead-style per-layer grouped bars: rhyme word (i=-2) vs newline (i=0),
+    corrupt-rhyme rate with cluster-bootstrap 95% CIs over prompt pairs."""
+    panels = [
+        ("base_teacher", "Gemma-3-27B  (teacher)"),
+        ("base", "Gemma-3-4B  (base student)"),
+        ("base12b", "Gemma-3-12B  (base student)"),
+        ("teacher_sft", "Gemma-3-4B  (teacher-SFT)"),
+    ]
+    panels = [(t, lab) for t, lab in panels if _per_pair_matrix(rd, t, seeds, "newline") is not None]
+    ncol = 2
+    nrow = int(np.ceil(len(panels) / ncol))
+    fig, axes = plt.subplots(nrow, ncol, figsize=(13, 4.2 * nrow))
+    axes = np.array(axes).reshape(-1)
+    C_RW, C_NL = "#6699cc", "#cc6677"
+    for ax, (tag, label) in zip(axes, panels):
+        rw = _per_pair_matrix(rd, tag, seeds, "rhyme_word")
+        nl = _per_pair_matrix(rd, tag, seeds, "newline")
+        m_rw, lo_rw, hi_rw = _cluster_bootstrap(rw)
+        m_nl, lo_nl, hi_nl = _cluster_bootstrap(nl)
+        n = len(m_rw); x = np.arange(n); w = 0.42
+        ax.bar(x - w / 2, m_rw, w, color=C_RW, label="i=-2 (rhyme word)",
+               yerr=np.vstack([m_rw - lo_rw, hi_rw - m_rw]),
+               error_kw=dict(ecolor="black", lw=0.5, capsize=1))
+        ax.bar(x + w / 2, m_nl, w, color=C_NL, label="i=0 (newline)",
+               yerr=np.vstack([m_nl - lo_nl, hi_nl - m_nl]),
+               error_kw=dict(ecolor="black", lw=0.5, capsize=1))
+        ax.set_title(label, fontsize=13, fontweight="bold")
+        ax.set_xlabel("Layer", fontsize=12); ax.set_ylabel("Corrupt rhyme rate", fontsize=12)
+        ax.set_ylim(0, 1.05); ax.set_xlim(-1, n)
+        ax.set_xticks(np.arange(0, n, max(1, n // 12)))
+        ax.grid(axis="y", ls="--", alpha=0.4)
+        ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
+        ax.legend(loc="upper left", frameon=False, fontsize=11)
+    for ax in axes[len(panels):]:
+        ax.set_visible(False)
+    fig.suptitle("Activation patching (corrupt→clean): where does the rhyme live causally?",
+                 fontsize=14, fontweight="bold")
+    fig.tight_layout(rect=[0, 0, 1, 0.98]); fig.savefig(out, dpi=180); plt.close(fig)
+
+
 def fig_handoff_inheritance(rd, seeds, out):
     """Causal handoff H vs depth: 4B conditions (flat, C_nl=0) vs 27B teacher."""
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -309,6 +378,7 @@ def main():
     fig_cka_layers(rd, seeds, f"{od}/fig6_cka_layers.png")
     fig_diversity(rd, seeds, f"{od}/fig7_diversity.png")
     fig_mech_vs_forget(rd, seeds, f"{od}/fig8_mech_vs_forget.png")
+    fig_patching_perlayer(rd, seeds, f"{od}/fig5b_patching_perlayer.png")
     if load(rd, "patching", "base_teacher"):
         fig_handoff_inheritance(rd, seeds, f"{od}/fig10_handoff_inheritance.png")
     if all(load(rd, "forgetting", f"corpus_sft_seed{s}_matched") for s in seeds):

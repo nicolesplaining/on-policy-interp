@@ -109,11 +109,21 @@ staying flat at the newline in late layers.
 
 **Patching — causal reliance (handoff H = C_newline − C_rhyme_word):**
 
+![Per-layer patching](figures/fig5b_patching_perlayer.png)
+
+*(look-ahead-style per-layer corrupt→clean patching: bars are the corrupt-rhyme
+rate when patching the rhyme word (i=−2, blue) vs the newline (i=0, red), with
+cluster-bootstrap 95% CIs over prompt pairs. The 27B teacher shows the classic
+crossover — blue drops and red rises around layer 30 — while the 4B/12B students
+show only blue: the newline never becomes causal.)*
+
 In the base 4B student **and all four trained variants**, patching the newline
 residual has **zero** causal effect (peak C_newline = 0.00) while patching the
 rhyme word fully redirects the rhyme (peak C_rhyme_word ≈ 0.95–1.0). The rhyme
 word is the *sole* causal site and H ≈ −1 at every layer: **no SFT or KD regime
-develops the causal handoff** (Section 19's anticipated outcome).
+develops the causal handoff** (Section 19's anticipated outcome). Base Gemma-3-12B
+behaves the same (newline C = 0) — the handoff is **scale-gated**, present only at
+27B.
 
 The 27B **teacher**, by contrast, genuinely has it — newline patching becomes
 effective (C_newline up to **0.62** near layer 32/62) and H goes **positive over
@@ -225,7 +235,8 @@ Reproduce: `python -m analysis.matched_perf --threshold 0.85` then
 | `figures/fig2_behavioral.png` | rhyme accuracy by split (test / held-out / recovery) |
 | `figures/fig3_decodable_vs_causal.png` | Δ_newline (decodable) vs handoff H (causal) |
 | `figures/fig4_probe_layers.png` | per-layer newline family-decodability |
-| `figures/fig5_patching_layers.png` | per-layer causal C: newline vs rhyme word |
+| `figures/fig5_patching_layers.png` | per-layer causal C: newline vs rhyme word (line) |
+| `figures/fig5b_patching_perlayer.png` | look-ahead-style per-layer patching bars (rhyme word vs newline) + bootstrap CIs |
 | `figures/fig6_cka_layers.png` | per-layer representation drift vs base |
 | `figures/fig7_diversity.png` | distinct-2 / self-BLEU (H5) |
 | `figures/fig8_mech_vs_forget.png` | update concentration vs output drift (r≈0.99) |

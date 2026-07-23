@@ -84,13 +84,17 @@ def load_model(
     device_map: str = "auto",
     quantization: Optional[str] = None,
     for_training: bool = False,
+    shard: bool = False,
+    max_memory: Optional[dict] = None,
 ):
     """Load ``model_name`` and return ``(model, tokenizer, adapter)``.
 
     - Gemma-3 4B+ load via ``Gemma3ForConditionalGeneration``.
     - ``quantization`` in {"8bit","4bit"} enables bitsandbytes (teacher inference).
-    - ``for_training`` disables ``device_map`` sharding (let the trainer / FSDP
-      place the model) and leaves the model in train mode.
+    - ``for_training`` disables ``device_map`` sharding (let the trainer place the
+      model), *unless* ``shard=True`` — then the model is spread across GPUs with
+      naive model parallelism (``device_map="auto"``, optional ``max_memory``),
+      which is how the 12B+ student is full-fine-tuned across H100s.
     """
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -110,11 +114,14 @@ def load_model(
             )
 
     load_kwargs = dict(token=token, trust_remote_code=True, torch_dtype=dtype, **quant_kwargs)
-    if for_training:
-        # Trainer / FSDP handles placement; don't pre-shard with device_map.
+    if shard:
+        # Naive model parallelism across GPUs (works for full-FT training too).
+        load_kwargs["device_map"] = "auto"
+        if max_memory:
+            load_kwargs["max_memory"] = max_memory
+    elif for_training:
+        # single-device training; trainer calls .to(device) afterwards.
         load_kwargs.pop("device_map", None)
-    elif not quant_kwargs:
-        load_kwargs["device_map"] = device_map
     else:
         load_kwargs["device_map"] = device_map
 

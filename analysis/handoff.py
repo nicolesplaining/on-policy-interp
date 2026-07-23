@@ -58,7 +58,8 @@ def main():
     ap.add_argument("--out", default="results/handoff.json")
     args = ap.parse_args()
 
-    tags = ["base", "corpus_sft", "teacher_sft", "teacher_kd", "onpolicy_kd", "base_teacher"]
+    tags = ["base", "corpus_sft", "teacher_sft", "teacher_kd", "onpolicy_kd",
+            "base_teacher", "base12b", "teacher_sft12b"]
     out = {}
     print(f"{'model':14s} {'handoff':>8} {'max_H':>7} {'@depth':>7} {'peakNL_C':>9} {'@depth':>7} {'#layers':>8}")
     for t in tags:

@@ -1,0 +1,30 @@
+{
+  "model": "google/gemma-3-12b-it",
+  "tag": "base12b",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 1000,
+    "n_attempt": 1000,
+    "rhyme_accuracy": 0.879,
+    "valid_couplet_rate": 0.119,
+    "ci_low": 0.8573226741029558,
+    "ci_high": 0.8977765367685602
+  },
+  "test_heldout_family": {
+    "n": 1000,
+    "n_attempt": 1000,
+    "rhyme_accuracy": 0.914,
+    "valid_couplet_rate": 0.103,
+    "ci_low": 0.8949995893100292,
+    "ci_high": 0.9298317386604397
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.766,
+    "valid_couplet_rate": 0.19,
+    "ci_low": 0.7269477983375824,
+    "ci_high": 0.8009959046039771
+  }
+}
