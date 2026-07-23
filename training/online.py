@@ -52,12 +52,15 @@ def sample_student_rollouts(model, tokenizer, prompt_batch: List[List[int]],
     input_ids = torch.tensor(padded, device=device)
     attention_mask = torch.tensor(attn, device=device)
 
+    prev_cache = model.config.use_cache
+    model.config.use_cache = True   # fast KV-cached decoding for rollouts
     gen = model.generate(
         input_ids=input_ids, attention_mask=attention_mask,
         max_new_tokens=max_new_tokens, do_sample=temperature > 0,
         temperature=temperature if temperature > 0 else None,
         pad_token_id=pad_id,
     )
+    model.config.use_cache = prev_cache
     full = gen  # [B, maxlen + <=max_new_tokens]
     B, L = full.shape
     newline_ids = _newline_token_ids(tokenizer)
@@ -74,8 +77,10 @@ def sample_student_rollouts(model, tokenizer, prompt_batch: List[List[int]],
             if tok in newline_ids or "\n" in tokenizer.decode([tok]):
                 end = j + 1
                 break
-        # supervised positions predict tokens in [start, end): mask at t=start-1..end-2
-        labels_mask[b, start - 1:end - 1] = True
+        # Mark the *target* tokens [start, end) as supervised; kd_loss shifts this
+        # mask internally (mask[:,1:]) to the predictor positions, matching the
+        # SFT convention (labels != IGNORE).
+        labels_mask[b, start:end] = True
         # zero attention past the truncation so the teacher/student ignore tails
         if end < L:
             new_attn[b, end:] = 0

@@ -33,6 +33,8 @@ from training import online as O  # noqa: E402
 def quick_rhyme_eval(model, tokenizer, val_records, device, n, max_new_tokens):
     """Greedy rhyme rate on ``n`` val prompts (training-time signal)."""
     model.eval()
+    prev_cache = model.config.use_cache
+    model.config.use_cache = True
     hits = tot = 0
     for r in val_records[:n]:
         enc = tokenizer(r["prompt"], return_tensors="pt").to(device)
@@ -43,6 +45,7 @@ def quick_rhyme_eval(model, tokenizer, val_records, device, n, max_new_tokens):
         res = R.do_rhyme(r["rhyme_word"], sw or "")
         tot += 1
         hits += 1 if res is True else 0
+    model.config.use_cache = prev_cache
     model.train()
     return hits / max(1, tot)
 
