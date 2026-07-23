@@ -17,6 +17,7 @@ def load_for_eval(path_or_name: str, device: str = "cuda:0"):
     model.to(device)
     model.eval()
     model.config.use_cache = True
+    tokenizer.padding_side = "left"  # correct alignment for batched generation
     return model, tokenizer, adapter
 
 
