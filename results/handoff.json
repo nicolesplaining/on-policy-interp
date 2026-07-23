@@ -1,0 +1,50 @@
+{
+  "base": {
+    "max_H": 0.0,
+    "max_H_norm_depth": 0.8181818181818182,
+    "peak_newline_C": 0.0,
+    "peak_newline_C_norm_depth": 0.0,
+    "n_handoff_layers": 0,
+    "handoff": false
+  },
+  "corpus_sft": {
+    "max_H": 0.0,
+    "max_H_norm_depth": 0.8181818181818182,
+    "peak_newline_C": 0.0,
+    "peak_newline_C_norm_depth": 0.0,
+    "n_handoff_layers": 0,
+    "handoff": false
+  },
+  "teacher_sft": {
+    "max_H": 0.0,
+    "max_H_norm_depth": 0.8181818181818182,
+    "peak_newline_C": 0.0,
+    "peak_newline_C_norm_depth": 0.0,
+    "n_handoff_layers": 0,
+    "handoff": false
+  },
+  "teacher_kd": {
+    "max_H": 0.0,
+    "max_H_norm_depth": 0.8181818181818182,
+    "peak_newline_C": 0.0,
+    "peak_newline_C_norm_depth": 0.0,
+    "n_handoff_layers": 0,
+    "handoff": false
+  },
+  "onpolicy_kd": {
+    "max_H": 0.0,
+    "max_H_norm_depth": 0.8181818181818182,
+    "peak_newline_C": 0.0,
+    "peak_newline_C_norm_depth": 0.0,
+    "n_handoff_layers": 0,
+    "handoff": false
+  },
+  "base_teacher": {
+    "max_H": 0.61,
+    "max_H_norm_depth": 0.5245901639344263,
+    "peak_newline_C": 0.62,
+    "peak_newline_C_norm_depth": 0.5245901639344263,
+    "n_handoff_layers": 11,
+    "handoff": true
+  }
+}

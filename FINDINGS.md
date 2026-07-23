@@ -109,16 +109,33 @@ staying flat at the newline in late layers.
 
 **Patching — causal reliance (handoff H = C_newline − C_rhyme_word):**
 
-`handoff_frac = 0` for every condition and every seed. H stays negative across
-layers (rhyme-word patching is at least as effective as newline patching
-everywhere); no trained 4B model develops a causal rhyme-word→newline handoff.
-This matches the outline's explicitly anticipated outcome (Section 19: *"No
-trained 4B model develops a newline handoff"* — the Gemma-3-27B phenomenon likely
-needs greater scale).
+In the base 4B student **and all four trained variants**, patching the newline
+residual has **zero** causal effect (peak C_newline = 0.00) while patching the
+rhyme word fully redirects the rhyme (peak C_rhyme_word ≈ 0.95–1.0). The rhyme
+word is the *sole* causal site and H ≈ −1 at every layer: **no SFT or KD regime
+develops the causal handoff** (Section 19's anticipated outcome).
+
+The 27B **teacher**, by contrast, genuinely has it — newline patching becomes
+effective (C_newline up to **0.62** near layer 32/62) and H goes **positive over
+~11 mid-network layers** — the look-ahead Gemma-3-27B signature.
+
+![Mechanistic inheritance fails](figures/fig10_handoff_inheritance.png)
+
+*(Refined detection: `analysis/handoff.py` → `results/handoff.json`. The original
+`mech.activation_patching` early-/late-third flag correctly marked the students
+`False` but mislabeled the teacher, whose handoff peaks mid-network and decays in
+the final layers; this figure and table use the corrected criterion.)*
+
+**Mechanistic inheritance fails (Section 16).** Teacher-trace SFT and both KD
+regimes imitate the teacher's *outputs* and even pick up more newline
+*decodability* (Δ_newline ↑), yet none acquire the teacher's *causal* newline
+site — **behavioral distillation without mechanistic inheritance** ("similar
+outputs without similar pathways"). At 4B the student keeps its original
+rhyme-word pathway under every regime.
 
 **The key dissociation (robust across seeds):** teacher supervision makes the
-future rhyme markedly more **decodable** at the newline (Δ_newline ↑) while leaving
-the model still **causally** reliant on the original rhyme word (H < 0).
+future rhyme more **decodable** at the newline (Δ_newline ↑) while leaving the
+model still **causally** reliant on the original rhyme word (C_newline = 0).
 Decodable ≠ causal — exactly the distinction the look-ahead methodology separates.
 
 ## Mechanism ↔ forgetting (Sections 16–17)
@@ -213,6 +230,7 @@ Reproduce: `python -m analysis.matched_perf --threshold 0.85` then
 | `figures/fig7_diversity.png` | distinct-2 / self-BLEU (H5) |
 | `figures/fig8_mech_vs_forget.png` | update concentration vs output drift (r≈0.99) |
 | `figures/fig9_matched.png` | forgetting at ckpt_100 vs matched performance (H1/H4 fair test) |
+| `figures/fig10_handoff_inheritance.png` | causal handoff H vs depth: 4B regimes vs 27B teacher (Section 16) |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,

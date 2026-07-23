@@ -228,6 +228,40 @@ def fig_mech_vs_forget(rd, seeds, out):
     fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
 
 
+def fig_handoff_inheritance(rd, seeds, out):
+    """Causal handoff H vs depth: 4B conditions (flat, C_nl=0) vs 27B teacher."""
+    fig, ax = plt.subplots(figsize=(9, 5))
+    for c in CONDS + ["base"]:
+        H = seed_stack(rd, "patching", c, seeds,
+                       lambda d: np.array(d["C_newline_by_layer"]) - np.array(d["C_rhyme_word_by_layer"])) \
+            if c != "base" else None
+        if c == "base":
+            d = load(rd, "patching", "base")
+            if d is None:
+                continue
+            H = (np.array(d["C_newline_by_layer"]) - np.array(d["C_rhyme_word_by_layer"]))[None, :]
+        if H is None:
+            continue
+        m = H.mean(0)
+        ax.plot(np.linspace(0, 1, len(m)), m, color=COLORS[c], lw=2,
+                ls="-" if c != "base" else "--", label=LABELS[c])
+    teach = load(rd, "patching", "base_teacher")
+    if teach:
+        Ht = np.array(teach["C_newline_by_layer"]) - np.array(teach["C_rhyme_word_by_layer"])
+        ax.plot(np.linspace(0, 1, len(Ht)), Ht, color="black", lw=3,
+                label="27B TEACHER", zorder=5)
+    ax.axhline(0, color="gray", lw=1)
+    ax.annotate("teacher's causal\nrhyme-word→newline handoff\n(H>0)",
+                xy=(0.52, 0.55), xytext=(0.15, 0.4), fontsize=10,
+                arrowprops=dict(arrowstyle="->", color="black"))
+    ax.set_xlabel("normalized depth (layer / L)")
+    ax.set_ylabel(r"handoff $H = C_{newline} - C_{rhyme\,word}$")
+    ax.set_title("Mechanistic inheritance FAILS: no 4B regime acquires the\n"
+                 "teacher's causal newline site (Section 16)", fontsize=12, fontweight="bold")
+    ax.legend(fontsize=8, loc="lower right"); ax.grid(alpha=0.3)
+    fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
+
+
 def fig_matched(rd, seeds, out):
     """Output-KL at ckpt_100 vs at matched performance, per condition."""
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -275,6 +309,8 @@ def main():
     fig_cka_layers(rd, seeds, f"{od}/fig6_cka_layers.png")
     fig_diversity(rd, seeds, f"{od}/fig7_diversity.png")
     fig_mech_vs_forget(rd, seeds, f"{od}/fig8_mech_vs_forget.png")
+    if load(rd, "patching", "base_teacher"):
+        fig_handoff_inheritance(rd, seeds, f"{od}/fig10_handoff_inheritance.png")
     if all(load(rd, "forgetting", f"corpus_sft_seed{s}_matched") for s in seeds):
         fig_matched(rd, seeds, f"{od}/fig9_matched.png")
         print(f"Wrote 9 figures to {od}/")
