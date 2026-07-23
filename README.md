@@ -58,12 +58,15 @@ criteria.
 
 ## Status
 
-Full pipeline implemented and executed on a 4×H100 cluster. A complete
-end-to-end **pilot** (seed 0, 150 steps, all four regimes) is committed under
-`results/`; see [`FINDINGS.md`](FINDINGS.md) for the write-up. Headline pilot
-signals: fixed-corpus SFT drifts ~10× more on general text than the
-teacher-supervised regimes (H1/H2); teacher supervision raises newline
-*decodability* without inducing a *causal* handoff (decodable ≠ causal); and
-parameter-update concentration tracks output drift (r≈0.98). The 3-seed
-confirmatory run (`analysis.synthesize --seeds 0 1 2`) extends these with
-mean ± range across seeds.
+Full pipeline implemented and executed on a 4×H100 cluster across **three seeds**
+(150-step budget, all four regimes). Per-condition results are under `results/`,
+aggregated in `results/synthesis_3seed.json`; see [`FINDINGS.md`](FINDINGS.md) for
+the write-up. Robust, seed-consistent signals:
+
+- fixed-corpus SFT drifts **~8–14× more** on general text than the three
+  teacher-supervised regimes (output-KL 0.247 vs 0.02–0.03; ranges disjoint) — H1/H2;
+- teacher supervision (hard / off-policy-soft / on-policy-soft) raises newline
+  *decodability* (Δ_newline ≈ 0.80–0.84 vs base 0.565) **without** inducing a
+  *causal* handoff (`handoff_frac = 0` everywhere) — decodable ≠ causal;
+- on-policy KD has the best recovery-prefix accuracy;
+- parameter-update concentration tracks output drift (r ≈ 0.99).
