@@ -1,0 +1,55 @@
+{
+  "condition": "corpus_sft",
+  "seed": 1,
+  "steps": [
+    20,
+    40,
+    60,
+    80,
+    100,
+    120,
+    140
+  ],
+  "loss": [
+    1.18359375,
+    0.82421875,
+    0.904296875,
+    0.86328125,
+    0.99609375,
+    0.91015625,
+    0.958984375
+  ],
+  "val_rhyme": [],
+  "checkpoints": [
+    {
+      "step": 0,
+      "tag": "ckpt_000",
+      "val_rhyme": 0.785
+    },
+    {
+      "step": 15,
+      "tag": "ckpt_010",
+      "val_rhyme": 0.7
+    },
+    {
+      "step": 38,
+      "tag": "ckpt_025",
+      "val_rhyme": 0.93
+    },
+    {
+      "step": 75,
+      "tag": "ckpt_050",
+      "val_rhyme": 0.955
+    },
+    {
+      "step": 112,
+      "tag": "ckpt_075",
+      "val_rhyme": 0.96
+    },
+    {
+      "step": 150,
+      "tag": "ckpt_100",
+      "val_rhyme": 0.96
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "model": "runs/teacher_kd_seed2/ckpt_100",
+  "tag": "teacher_kd_seed2_ckpt_100",
+  "n_prompts": 300,
+  "n_samples": 8,
+  "temperature": 0.8,
+  "unique_final_words": 454,
+  "final_word_entropy_bits": 7.778564554655644,
+  "final_word_type_token_ratio": 0.18916666666666668,
+  "distinct_1": 0.15021485573971763,
+  "distinct_2": 0.5403887688984881,
+  "self_bleu": 0.0024052205471803458,
+  "repeated_template_frac": 0.005833333333333334,
+  "mean_rhyme_accuracy": 0.8933333333333333
+}

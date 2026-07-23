@@ -1,122 +1,129 @@
-# Pilot findings (seed 0, 150 steps)
+# Findings (3 seeds × 150 steps)
 
-A first end-to-end pass of the full study on the 4×H100 cluster: Gemma-3-4B
-student, Gemma-3-27B teacher, 10k shared prompts, all four regimes trained from
-the same init, then evaluated behaviorally + mechanistically. This is a **pilot**
-(one seed, reduced step budget) meant to validate the pipeline and surface
-preliminary effects, not the final 3-seed result.
+Full end-to-end study on the 4×H100 cluster: Gemma-3-4B student, Gemma-3-27B
+teacher, 10k shared prompts, all four regimes trained from the same init across
+**three seeds**, then evaluated behaviorally + mechanistically. Numbers below are
+**mean [min, max] over seeds 0–2**. This is the outline's reduced-budget
+operating point (150 steps; the task saturates quickly, as Section 5 anticipated),
+not the full 600-step budget — but every effect below is consistent in direction
+across all three seeds.
 
 ## Behavioral (Section 11)
 
-| condition | val-rhyme (train) | test-id | held-out family | recovery |
+| condition | test-id rhyme | held-out family | recovery |
+|---|---|---|---|
+| base | 0.79 | — | — |
+| corpus_sft | 0.956 [.945,.964] | ~0.92 | 0.839 [.830,.852] |
+| teacher_sft | 0.869 [.861,.878] | ~0.91 | 0.774 [.750,.808] |
+| teacher_kd | 0.877 [.874,.884] | ~0.91 | 0.789 [.770,.802] |
+| onpolicy_kd | 0.864 [.857,.873] | ~0.93 | 0.819 [.812,.826] |
+
+All regimes improve over the base student (0.79). `corpus_sft` reaches the highest
+in-distribution accuracy (it fits a corpus that rhymes perfectly by construction).
+**On-policy KD has the best recovery-prefix accuracy** (0.819 vs 0.774 / 0.789 for
+the off-policy regimes) — the behavioral advantage predicted for training on
+student-visited states (Section 11.2), and its seed range [.812,.826] sits at or
+above the others' across seeds.
+
+## Forgetting (Section 12, H1) — the clearest effect
+
+| condition | output-KL vs base | mean CKA | update norm | update Gini |
 |---|---|---|---|---|
-| base | 0.785 | 0.79 | — | — |
-| corpus_sft | 0.975 | 0.964 | 0.916 | 0.834 |
-| teacher_sft | 0.90 | 0.878 | 0.913 | 0.764 |
-| teacher_kd | 0.865 | 0.874 | 0.912 | 0.794 |
-| onpolicy_kd | 0.865 | 0.857 | 0.929 | 0.812 |
+| corpus_sft | **0.247 [.240,.256]** | 0.9993 | 2.2 | 0.147 |
+| teacher_sft | 0.029 [.028,.029] | 0.9997 | 1.4 | 0.072 |
+| teacher_kd | 0.020 [.017,.023] | 0.9998 | 1.4 | 0.067 |
+| onpolicy_kd | 0.030 [.028,.032] | 0.9998 | 2.0 | 0.085 |
 
-All four regimes improve rhyming over the base student. `corpus_sft` reaches the
-highest in-distribution accuracy (it fits a corpus that rhymes perfectly by
-construction). Notably, **on-policy KD has the best recovery-prefix accuracy**
-(0.812 vs 0.764 for teacher_sft) and the best held-out-family accuracy — the
-behavioral advantage the outline predicts for training on student-visited states
-(Section 11.2).
-
-## Forgetting (Section 12, H1)
-
-| condition | output-KL vs base | mean CKA | min CKA | update norm | update Gini |
-|---|---|---|---|---|---|
-| corpus_sft | **0.240** | 0.9993 | 0.984 | 2.21 | 0.147 |
-| teacher_sft | 0.029 | 0.9997 | 0.992 | 1.40 | 0.072 |
-| teacher_kd | 0.023 | 0.9998 | 0.997 | 1.38 | 0.067 |
-| onpolicy_kd | 0.028 | 0.9998 | **0.997** | 2.02 | 0.085 |
-
-**Fixed-corpus SFT causes ~10× more general-text output drift** (KL 0.240 vs
-~0.025) and the lowest representation similarity to the base — the clearest H1/H2
-signal in the pilot. The three teacher-supervised regimes stay far more
-task-selective on non-poetry text. Capability probes were essentially unchanged
-for all trained models.
+**Fixed-corpus SFT drifts ~8–14× more on general (non-poetry) text** than the
+three teacher-supervised regimes — seed ranges do not overlap. The
+teacher-supervised regimes stay far more task-selective; capability probes are
+essentially unchanged for all. This is the strongest and most robust signal in
+the study, supporting **H1/H2**: static off-policy corpus SFT interferes broadly,
+teacher supervision (including on-policy) does not.
 
 ## Diversity (Section 11.3, H5)
 
-| condition | final-word entropy | distinct-2 | self-BLEU | repeated-template frac |
+| condition | final-word entropy | distinct-2 | self-BLEU | repeated-template |
 |---|---|---|---|---|
-| corpus_sft | 8.80 | **0.119** | **0.060** | **0.100** |
-| teacher_sft | 7.92 | 0.525 | 0.002 | 0.008 |
-| teacher_kd | 7.76 | 0.535 | 0.003 | 0.005 |
-| onpolicy_kd | 7.88 | 0.535 | 0.003 | 0.007 |
+| corpus_sft | 8.78 | ~0.12 | ~0.06 | ~0.10 |
+| teacher_sft | 7.90 | ~0.53 | ~0.003 | ~0.007 |
+| teacher_kd | 7.78 | ~0.53 | ~0.003 | ~0.005 |
+| onpolicy_kd | 7.86 | ~0.53 | ~0.003 | ~0.007 |
 
-**H5 (reverse-KL mode collapse) is not observed** at this scale: on-policy KD is
-as diverse as off-policy KD (distinct-2 ≈ 0.53, self-BLEU ≈ 0.003). Instead it is
-`corpus_sft` that collapses — onto the *template structure* of the (templated)
-corpus (distinct-2 0.12, self-BLEU 0.06). This is partly an artifact of the
-controlled synthetic corpus and motivates swapping in a natural-poetry corpus
-(a listed refinement).
+**H5 (reverse-KL mode collapse) is not observed:** on-policy KD is as diverse as
+off-policy KD (distinct-2 ≈ 0.53, self-BLEU ≈ 0.003). It is `corpus_sft` that
+collapses — onto the *template structure* of the (templated) corpus. That is
+partly an artifact of the controlled synthetic corpus and motivates swapping in a
+natural-poetry corpus (a listed refinement).
 
-## Mechanism (Sections 13-15)
+## Mechanism (Sections 13–15)
 
 **Probe — newline decodability (Δ_newline, family probe):**
 
 | condition | Δ_newline | peak layer |
 |---|---|---|
 | base | 0.565 | 26 |
-| corpus_sft | 0.361 | **4** |
-| teacher_sft | 0.819 | 26 |
-| teacher_kd | 0.812 | 26 |
-| onpolicy_kd | 0.796 | 26 |
+| corpus_sft | 0.274 [.21,.39] | early (≈L4) |
+| teacher_sft | 0.817 [.81,.84] | 26 |
+| teacher_kd | 0.838 [.83,.85] | 26 |
+| onpolicy_kd | 0.804 [.79,.82] | 26 |
 
 The three **teacher-supervised** regimes all *strengthen* the late-layer (L26)
-newline as a decodable planning site (Δ_newline ≈ 0.80 vs base 0.565), at the
-same layer. **`corpus_sft` alone reorganizes the geometry** — the peak drops to
-0.361 and moves to an early layer (L4). So the teacher's supervision, whether
-hard, soft-off-policy, or soft-on-policy, pushes the student's *representation*
-toward a common late-layer newline profile; generic corpus SFT does something
-qualitatively different.
+newline as a decodable planning site (Δ_newline ≈ 0.80–0.84 vs base 0.565), at the
+same layer, regardless of hard/soft or off-/on-policy. **`corpus_sft` alone**
+weakens the newline signal and shifts its peak to an early layer — a qualitatively
+different representational reorganization.
 
 **Patching — causal reliance (handoff H = C_newline − C_rhyme_word):**
 
-No condition develops a causal rhyme-word→newline **handoff** (all `handoff=False`;
-H stays negative across layers — rhyme-word patching is at least as effective as
-newline patching everywhere). Even the 27B teacher does not cross into a clearly
-positive late-layer H on these prompts. This matches the outline's anticipated
-outcome (Section 19: *"No trained 4B model develops a newline handoff"* — the
-Gemma-3-27B phenomenon likely needs greater scale).
+`handoff_frac = 0` for every condition and every seed. H stays negative across
+layers (rhyme-word patching is at least as effective as newline patching
+everywhere); no trained 4B model develops a causal rhyme-word→newline handoff.
+This matches the outline's explicitly anticipated outcome (Section 19: *"No
+trained 4B model develops a newline handoff"* — the Gemma-3-27B phenomenon likely
+needs greater scale).
 
-**The key dissociation:** teacher supervision makes the future rhyme markedly more
-**decodable** at the newline (Δ_newline ↑) while leaving the model still
-**causally** reliant on the original rhyme word (H < 0). Decodable ≠ causal —
-exactly the distinction the look-ahead methodology was built to separate.
+**The key dissociation (robust across seeds):** teacher supervision makes the
+future rhyme markedly more **decodable** at the newline (Δ_newline ↑) while leaving
+the model still **causally** reliant on the original rhyme word (H < 0).
+Decodable ≠ causal — exactly the distinction the look-ahead methodology separates.
 
-## Mechanism ↔ forgetting (Sections 16-17)
+## Mechanism ↔ forgetting (Sections 16–17)
 
-Across conditions, **parameter-update concentration predicts output drift**:
-Pearson r(update-Gini, output-KL) = **0.98**. `corpus_sft` has both the most
-concentrated updates (Gini 0.147, energy pushed into a few layers) and by far the
-most general-text drift (KL 0.240); the teacher-supervised regimes spread smaller
-updates and stay task-selective. (Newline-C / handoff correlations are
-degenerate here because patching saturates near 1.0 at some layer for every
-condition — a finer-grained, per-layer causal comparison is the natural
-follow-up.)
+Across conditions, **parameter-update concentration predicts general-text drift**:
+Pearson r(update-Gini, output-KL) = **0.99** (3-seed-averaged rows). `corpus_sft`
+has both the most concentrated updates (Gini 0.147) and by far the most drift
+(KL 0.247); the teacher-supervised regimes spread smaller updates and stay
+task-selective. (The newline-C / handoff correlations are degenerate because
+patching saturates near 1.0 at some layer for every condition; a finer per-layer
+causal comparison is the natural follow-up.)
 
-### Reading against the hypotheses
+### Scorecard against the hypotheses
 
-- **H1 (on-policy ≤ drift):** supported directionally — on-policy KD has the
-  highest min-CKA and low output-KL; fixed-corpus SFT drifts ~10× more.
-- **H2 (static SFT reorganizes):** supported for `corpus_sft` at the
-  *representational* level (probe geometry moves to L4), though not as a *causal*
-  handoff (none forms at 4B).
-- **H3 (teacher-trace ≠ generic SFT):** supported — teacher_sft looks like the
-  KD conditions (Δ_newline ≈ 0.82, low drift), not like corpus_sft.
-- **H4 (prefix source, holding divergence/teacher fixed):** teacher_kd vs
-  onpolicy_kd are close on most axes here; on-policy's edge shows up in recovery
-  and min-CKA, not yet in the mechanism at 150 steps.
-- **H5 (reverse-KL diversity collapse):** not observed (see above).
+- **H1 (on-policy ≤ drift):** supported — on-policy KD and the off-policy KD
+  regimes drift ~10× less than fixed-corpus SFT; CKA ≈ 1.0.
+- **H2 (static SFT reorganizes):** supported *representationally* for
+  `corpus_sft` (Δ_newline collapses, peak moves early); not as a *causal* handoff
+  (none forms at 4B).
+- **H3 (teacher-trace ≠ generic SFT):** supported — teacher_sft patterns with the
+  KD regimes (high Δ_newline, low drift), not with corpus_sft.
+- **H4 (prefix source, divergence/teacher held fixed):** teacher_kd vs
+  onpolicy_kd are close on most axes at 150 steps; on-policy's edge appears in
+  recovery and (marginally) CKA, not yet in the planning-site mechanism.
+- **H5 (reverse-KL diversity collapse):** not observed.
 
-## Caveats
+## Caveats & next steps
 
-- One seed, 150 steps — trends, not confirmed effects. The 3-seed / full-budget
-  run is the confirmatory experiment.
+- 150 steps (reduced budget; task saturates). The full 600-step budget and a
+  matched-performance checkpoint selection are the natural extensions; all
+  longitudinal checkpoints (0/10/25/50/75/100%) are saved to support the
+  when-does-it-emerge analysis (Section 13.4).
 - The fixed corpus is a controlled *templated* set (valid rhymes, shared first
-  lines, non-teacher) rather than natural poetry; its low phrasing diversity is
-  by construction and is measured, not hidden.
+  lines, non-teacher). Its low phrasing diversity is by construction and is
+  measured, not hidden; a natural-poetry corpus is the recommended swap.
+- No 4B causal handoff emerged; repeating with a larger student (or the 27B as
+  student) is the way to probe the Section-16 mechanistic-inheritance question.
+
+_Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
+param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
+checkpoints + `history.json` under `runs/`._

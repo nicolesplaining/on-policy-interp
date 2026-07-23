@@ -1,0 +1,15 @@
+{
+  "model": "runs/corpus_sft_seed0/ckpt_100",
+  "tag": "corpus_sft_seed0_ckpt_100",
+  "n_prompts": 300,
+  "n_samples": 8,
+  "temperature": 0.8,
+  "unique_final_words": 658,
+  "final_word_entropy_bits": 8.807581746790508,
+  "final_word_type_token_ratio": 0.27416666666666667,
+  "distinct_1": 0.04363726523275274,
+  "distinct_2": 0.11956600888371077,
+  "self_bleu": 0.05840093323761665,
+  "repeated_template_frac": 0.10958333333333334,
+  "mean_rhyme_accuracy": 0.9266666666666666
+}
