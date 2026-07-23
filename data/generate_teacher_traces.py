@@ -54,11 +54,21 @@ def generate_and_score(model, tokenizer, adapter, prompt, max_new_tokens,
     )
     full_ids = gen[0]
     gen_ids = full_ids[prompt_len:]
+
+    # Truncate the trace at the end of the second line: keep tokens up to and
+    # including the first one that contains a newline. Teacher generation often
+    # continues past the couplet, and we only want to train on the second line.
+    cut = gen_ids.shape[0]
+    for j in range(gen_ids.shape[0]):
+        if "\n" in tokenizer.decode(gen_ids[j:j + 1]):
+            cut = j + 1
+            break
+    gen_ids = gen_ids[:cut]
+    full_ids = full_ids[: prompt_len + cut]
     continuation = tokenizer.decode(gen_ids, skip_special_tokens=True)
-    # Trim to the first line break (end of second line).
     second_word = R.extract_second_line_word_with_newline(continuation)
 
-    # Teacher-forced forward over the full sequence to get per-position logits.
+    # Teacher-forced forward over the (truncated) sequence to get per-position logits.
     out = model(full_ids.unsqueeze(0))
     logits = out.logits[0]  # [seq, vocab]
     # logits[t] predicts token t+1; the distribution for generated token at
