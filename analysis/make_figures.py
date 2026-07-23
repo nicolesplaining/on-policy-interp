@@ -320,9 +320,6 @@ def fig_handoff_inheritance(rd, seeds, out):
         ax.plot(np.linspace(0, 1, len(Ht)), Ht, color="black", lw=3,
                 label="27B TEACHER", zorder=5)
     ax.axhline(0, color="gray", lw=1)
-    ax.annotate("teacher's causal\nrhyme-word→newline handoff\n(H>0)",
-                xy=(0.52, 0.55), xytext=(0.15, 0.4), fontsize=10,
-                arrowprops=dict(arrowstyle="->", color="black"))
     ax.set_xlabel("normalized depth (layer / L)")
     ax.set_ylabel(r"handoff $H = C_{newline} - C_{rhyme\,word}$")
     ax.set_title("Mechanistic inheritance FAILS: no 4B regime acquires the\n"
