@@ -1,0 +1,30 @@
+{
+  "model": "runs/teacher_sft_seed0/ckpt_100",
+  "tag": "teacher_sft_ckpt_100",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 1000,
+    "n_attempt": 1000,
+    "rhyme_accuracy": 0.878,
+    "valid_couplet_rate": 0.878,
+    "ci_low": 0.8562552888972927,
+    "ci_high": 0.8968515757713962
+  },
+  "test_heldout_family": {
+    "n": 1000,
+    "n_attempt": 1000,
+    "rhyme_accuracy": 0.913,
+    "valid_couplet_rate": 0.913,
+    "ci_low": 0.8939131380174493,
+    "ci_high": 0.9289258437501923
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.764,
+    "valid_couplet_rate": 0.764,
+    "ci_low": 0.7248548911970089,
+    "ci_high": 0.7991193102186741
+  }
+}

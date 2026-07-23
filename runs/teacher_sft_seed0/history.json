@@ -1,0 +1,55 @@
+{
+  "condition": "teacher_sft",
+  "seed": 0,
+  "steps": [
+    20,
+    40,
+    60,
+    80,
+    100,
+    120,
+    140
+  ],
+  "loss": [
+    1.578125,
+    1.6875,
+    1.390625,
+    1.4921875,
+    1.421875,
+    1.453125,
+    1.40625
+  ],
+  "val_rhyme": [],
+  "checkpoints": [
+    {
+      "step": 0,
+      "tag": "ckpt_000",
+      "val_rhyme": 0.785
+    },
+    {
+      "step": 15,
+      "tag": "ckpt_010",
+      "val_rhyme": 0.84
+    },
+    {
+      "step": 38,
+      "tag": "ckpt_025",
+      "val_rhyme": 0.855
+    },
+    {
+      "step": 75,
+      "tag": "ckpt_050",
+      "val_rhyme": 0.875
+    },
+    {
+      "step": 112,
+      "tag": "ckpt_075",
+      "val_rhyme": 0.91
+    },
+    {
+      "step": 150,
+      "tag": "ckpt_100",
+      "val_rhyme": 0.9
+    }
+  ]
+}

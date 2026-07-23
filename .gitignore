@@ -12,7 +12,7 @@ env/
 *.safetensors
 *.bin
 checkpoints/
-runs/
+runs/*/ckpt_*/
 wandb/
 hf_cache/
 
