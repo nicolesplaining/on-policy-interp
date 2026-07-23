@@ -29,11 +29,11 @@ mech_one() {  # $1 model  $2 tag  $3 gpu
 
 # base student + 4 conditions on gpus 0..3,0 ; teacher on gpu 1 in parallel
 mech_one google/gemma-3-4b-it base 0 &
-mech_one runs/corpus_sft_seed${SEED}/ckpt_100  corpus_sft_ckpt_100  1 &
-mech_one runs/teacher_sft_seed${SEED}/ckpt_100 teacher_sft_ckpt_100 2 &
-mech_one runs/teacher_kd_seed${SEED}/ckpt_100  teacher_kd_ckpt_100  3 &
+mech_one runs/corpus_sft_seed${SEED}/ckpt_100  corpus_sft_seed${SEED}_ckpt_100  1 &
+mech_one runs/teacher_sft_seed${SEED}/ckpt_100 teacher_sft_seed${SEED}_ckpt_100 2 &
+mech_one runs/teacher_kd_seed${SEED}/ckpt_100  teacher_kd_seed${SEED}_ckpt_100  3 &
 wait
-mech_one runs/onpolicy_kd_seed${SEED}/ckpt_100 onpolicy_kd_ckpt_100 0 &
+mech_one runs/onpolicy_kd_seed${SEED}/ckpt_100 onpolicy_kd_seed${SEED}_ckpt_100 0 &
 # teacher patching (27B) for inheritance depth comparison
 CUDA_VISIBLE_DEVICES=1 python -m mech.activation_patching --model google/gemma-3-27b-it \
   --tag base_teacher --device cuda:0 --out results/patching/base_teacher.json \

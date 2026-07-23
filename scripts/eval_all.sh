@@ -13,7 +13,7 @@ BASE=google/gemma-3-4b-it
 CONDS=(corpus_sft teacher_sft teacher_kd onpolicy_kd)
 
 run_one() {  # $1 condition  $2 gpu
-  local cond=$1 gpu=$2 ck=runs/${1}_seed${SEED}/ckpt_100 tag=${1}_ckpt_100
+  local cond=$1 gpu=$2 ck=runs/${1}_seed${SEED}/ckpt_100 tag=${1}_seed${SEED}_ckpt_100
   local dev=cuda:0
   CUDA_VISIBLE_DEVICES=$gpu python -m eval.behavioral --model "$ck" --tag "$tag" --device $dev \
     --out results/behavioral/${tag}.json >> "$LOG/eval_${cond}_s${SEED}.log" 2>&1

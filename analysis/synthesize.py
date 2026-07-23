@@ -39,8 +39,7 @@ def _peak_normalized(values):
 
 
 def collect(condition, seed, results_dir, runs_dir):
-    ck = "ckpt_100"
-    tag = f"{condition}_{ck}"
+    tag = f"{condition}_seed{seed}_ckpt_100"
     row = {"condition": condition, "seed": seed}
 
     hist = _load(os.path.join(runs_dir, f"{condition}_seed{seed}", "history.json"))
@@ -101,11 +100,33 @@ def correlate(rows, x_key, y_key):
     return cov / (vx * vy) if vx and vy else None
 
 
+def aggregate_seeds(condition, seeds, results_dir, runs_dir):
+    """Mean (± range) of each numeric metric across seeds for one condition."""
+    per_seed = [collect(condition, s, results_dir, runs_dir) for s in seeds]
+    keys = set()
+    for r in per_seed:
+        keys |= {k for k, v in r.items() if isinstance(v, (int, float)) and k != "seed"}
+    agg = {"condition": condition, "n_seeds": len(seeds)}
+    for k in keys:
+        vals = [r[k] for r in per_seed if isinstance(r.get(k), (int, float))]
+        if vals:
+            agg[k] = sum(vals) / len(vals)
+            agg[f"{k}_min"] = min(vals)
+            agg[f"{k}_max"] = max(vals)
+    # handoff: fraction of seeds showing it
+    hs = [r.get("handoff") for r in per_seed if r.get("handoff") is not None]
+    if hs:
+        agg["handoff_frac"] = sum(1 for h in hs if h) / len(hs)
+    return agg, per_seed
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--conditions", nargs="+",
                     default=["corpus_sft", "teacher_sft", "teacher_kd", "onpolicy_kd"])
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--seeds", type=int, nargs="+", default=None,
+                    help="If given, aggregate across these seeds (mean ± range).")
     ap.add_argument("--results_dir", default="results")
     ap.add_argument("--runs_dir", default="runs")
     ap.add_argument("--teacher_patching", default="results/patching/base_teacher.json",
@@ -113,7 +134,16 @@ def main():
     ap.add_argument("--out", default="results/synthesis.json")
     args = ap.parse_args()
 
-    rows = [collect(c, args.seed, args.results_dir, args.runs_dir) for c in args.conditions]
+    if args.seeds:
+        agg_rows, per_seed_rows = [], {}
+        rows = []
+        for c in args.conditions:
+            agg, per_seed = aggregate_seeds(c, args.seeds, args.results_dir, args.runs_dir)
+            agg_rows.append(agg)
+            per_seed_rows[c] = per_seed
+            rows.append(agg)  # associations use the seed-averaged rows
+    else:
+        rows = [collect(c, args.seed, args.results_dir, args.runs_dir) for c in args.conditions]
 
     # Central Section-17 associations (across conditions).
     associations = {
@@ -137,8 +167,10 @@ def main():
             if r.get("newline_C_norm_depth") is not None and t_depth is not None:
                 inheritance[f"{r['condition']}_depth_gap"] = abs(r["newline_C_norm_depth"] - t_depth)
 
-    out = {"seed": args.seed, "rows": rows,
+    out = {"seeds": args.seeds or [args.seed], "rows": rows,
            "associations": associations, "inheritance": inheritance}
+    if args.seeds:
+        out["per_seed"] = per_seed_rows
     write_json(args.out, out)
 
     # console table
