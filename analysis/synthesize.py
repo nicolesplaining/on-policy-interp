@@ -176,7 +176,8 @@ def main():
     # console table
     cols = ["condition", "rhyme_test_id", "rhyme_recovery", "final_word_entropy",
             "output_kl", "mean_cka", "capability_delta",
-            "delta_newline", "peak_newline_C", "peak_rhyme_word_C", "handoff"]
+            "delta_newline", "peak_newline_C", "peak_rhyme_word_C",
+            "handoff_frac" if args.seeds else "handoff"]
     print("\n" + "  ".join(f"{c:>16}" for c in cols))
     for r in rows:
         print("  ".join(
