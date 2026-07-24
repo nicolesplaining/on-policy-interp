@@ -270,6 +270,24 @@ starting from `corpus_sft` (→ it keeps more forgetting than off-policy here). 
 "preservation" is about staying near the current model's state distribution, not
 specifically about protecting the base pathway. (Robust across 3 seeds.)
 
+**Trajectory (longitudinal probe of every checkpoint).** The *rate* of change is
+regime-specific and mechanistically telling:
+
+![Relaxation trajectory](figures/fig13_relax_trajectory.png)
+
+- **off-policy JUMPS** — Δ_newline snaps to the teacher's ~0.85 by step 10 and
+  plateaus. It trains on the teacher's *fixed* traces, so it matches the
+  teacher's distribution almost immediately.
+- **on-policy DRIFTS** — Δ_newline inches up over the full 100 steps (~0.25→0.39),
+  never reaching teacher level. It trains on the student's *own evolving*
+  rollouts, so its state distribution moves slowly and the change self-limits.
+- **continued SFT is FLAT** — stays at the corpus_sft value; no relaxation.
+
+This is the crux of the on-policy-vs-off-policy mechanism difference: **same
+teacher, same divergence, but off-policy overwrites the mechanism fast while
+on-policy nudges it slowly** — a direct consequence of *where* the training states
+come from.
+
 ## Figures
 
 | file | shows |
