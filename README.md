@@ -78,3 +78,23 @@ the write-up. Robust, seed-consistent signals:
 
 See [`FINDINGS.md`](FINDINGS.md) for the full per-hypothesis scorecard, including
 the corrected reading of H1/H4.
+
+### Follow-up: does on-policy distillation change a model's mechanism vs SFT / off-policy?
+
+A battery of controlled experiments (relaxation from a matched reorganized start,
+3 seeds × 4B+12B, longitudinal, parameter- and representation-level) gives a
+robust, novel answer:
+
+- From a matched start, the regimes change the mechanism **differently**:
+  **continued SFT entrenches**, **off-policy KD snaps to the teacher fast**
+  (largest mechanism move), **on-policy KD drifts slowly** (smallest mechanism
+  move) — its preservation is **state-relative**, not base-specific.
+- **Parameter-vs-function dissociation** (the sharpest result, general across the
+  main study too): on-policy churns the **weights ~45% more** than off-policy for
+  the **same** mechanistic change — its preservation is *functional, not
+  parametric*.
+- All mechanism change is **decodable-only** (no 4B/12B develops the teacher's
+  causal handoff); cross-condition probe transfer does not separate on/off-policy
+  (reported honestly as inconclusive).
+
+Details + figures (fig12–15) in [`FINDINGS.md`](FINDINGS.md).
