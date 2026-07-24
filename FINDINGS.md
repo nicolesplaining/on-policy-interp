@@ -235,12 +235,17 @@ the **same** reorganized checkpoint — `corpus_sft-4B` (rhyme 0.964, forgetting
 0.240, collapsed Δ_newline 0.388) — then continued 100 steps three ways, with the
 27B as teacher for the KD arms. All stay at matched-high rhyme (0.89–0.98):
 
+Mean [min,max] over 3 seeds (init from each seed's corpus_sft-4B):
+
 | from corpus_sft → | rhyme | output-KL | Δ_newline (base=0.564) |
 |---|---|---|---|
-| START (corpus_sft) | 0.964 | 0.240 | 0.388 |
-| + continued SFT | 0.982 | **0.260 ↑** | **0.284 ↓** (further from base) |
-| + on-policy KD (27B) | 0.942 | 0.130 ↓ | 0.487 ↑ (toward base) |
-| + off-policy KD (27B) | 0.894 | **0.060 ↓↓** | **0.834 ↑↑** (past base) |
+| START (corpus_sft) | ~0.96 | ~0.24 | ~0.39 |
+| + continued SFT | 0.972 | **0.267** [.26,.28] ↑ | **0.310** [.28,.37] ↓ (further from base) |
+| + on-policy KD (27B) | 0.932 | 0.139 [.13,.14] ↓ | 0.448 [.38,.49] ↑ (toward base) |
+| + off-policy KD (27B) | 0.902 | **0.077** [.06,.11] ↓↓ | **0.843** [.83,.85] ↑↑ (past base) |
+
+The ordering is monotonic with essentially non-overlapping seed ranges on both
+forgetting and geometry — the effect is robust, not a one-seed fluke.
 
 ![Relaxation](figures/fig12_relaxation.png)
 
@@ -263,8 +268,7 @@ model *currently* has — the base pathway when starting from base (→ less
 forgetting, the usual story), but equally an *SFT-induced reorganization* when
 starting from `corpus_sft` (→ it keeps more forgetting than off-policy here). The
 "preservation" is about staying near the current model's state distribution, not
-specifically about protecting the base pathway. (Single seed; replication
-in progress.)
+specifically about protecting the base pathway. (Robust across 3 seeds.)
 
 ## Figures
 

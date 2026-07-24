@@ -1,0 +1,30 @@
+{
+  "model": "runs_relax_s1/onpolicy_kd_seed1/ckpt_100",
+  "tag": "relax_onpolicy_seed1",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.93,
+    "valid_couplet_rate": 0.93,
+    "ci_low": 0.9042022712346763,
+    "ci_high": 0.9492405568287469
+  },
+  "test_heldout_family": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.92,
+    "valid_couplet_rate": 0.918,
+    "ci_low": 0.8928931229079627,
+    "ci_high": 0.9407021975260784
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.726,
+    "valid_couplet_rate": 0.718,
+    "ci_low": 0.6852936486809578,
+    "ci_high": 0.7632600237430738
+  }
+}
