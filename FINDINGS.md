@@ -333,11 +333,19 @@ reorganize the computation toward the teacher. So on-policy's "preservation" is
 model — it updates it heavily, but in directions that leave the computation
 intact. (Robust across 3 seeds; norms 2.08/1.77/1.23 with non-overlapping ranges.)
 
-**This is a general property, not a relaxation artifact.** It also holds in the
-main study *from base*, where all teacher-supervised regimes reach the *same*
-functional outcome (Δ_newline ≈ 0.81, similar rhyme): on-policy's weight-update
-norm is **2.00** vs off-policy's **1.38–1.41** (3 seeds, non-overlapping) — on-policy
-moves ~45% farther in parameter space for the *same* mechanistic change. Per-layer
+**This is a general property, not a relaxation artifact — confirmed from three
+distinct starts.** On-policy churns more weights than off-policy regardless of the
+starting mechanism:
+
+| start | on-policy | off-policy | ratio |
+|---|---|---|---|
+| base | 2.00 | 1.38 | 1.45 |
+| corpus_sft (low Δ_newline) | 2.08 | 1.77 | 1.17 |
+| teacher_sft (high Δ_newline) | 1.61 | 1.11 | 1.44 |
+
+In the from-base case all teacher-supervised regimes reach the *same* functional
+outcome (Δ_newline ≈ 0.81, similar rhyme), yet on-policy moves ~45% farther in
+parameter space for the *same* mechanistic change (3 seeds, non-overlapping). Per-layer
 the update profiles are similar (both mid/late-weighted), so the extra motion is
 in the *direction* of within-layer updates, not their location. **On-policy
 distillation reaches a given function via a longer, functionally-compensatory path
