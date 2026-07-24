@@ -227,6 +227,45 @@ Two conclusions survive the fair test:
 Reproduce: `python -m analysis.matched_perf --threshold 0.85` then
 `scripts/run_matched.sh`. Selection manifest: `results/matched/selection.json`.
 
+## Relaxation experiment — on-policy vs off-policy vs SFT from a matched start
+
+To isolate the *training regime's* effect on mechanism (the task otherwise
+saturates near base, masking differences), every condition is initialized from
+the **same** reorganized checkpoint — `corpus_sft-4B` (rhyme 0.964, forgetting-KL
+0.240, collapsed Δ_newline 0.388) — then continued 100 steps three ways, with the
+27B as teacher for the KD arms. All stay at matched-high rhyme (0.89–0.98):
+
+| from corpus_sft → | rhyme | output-KL | Δ_newline (base=0.564) |
+|---|---|---|---|
+| START (corpus_sft) | 0.964 | 0.240 | 0.388 |
+| + continued SFT | 0.982 | **0.260 ↑** | **0.284 ↓** (further from base) |
+| + on-policy KD (27B) | 0.942 | 0.130 ↓ | 0.487 ↑ (toward base) |
+| + off-policy KD (27B) | 0.894 | **0.060 ↓↓** | **0.834 ↑↑** (past base) |
+
+![Relaxation](figures/fig12_relaxation.png)
+
+**The three regimes move the mechanism in different directions — a clean
+regime-dependent mechanism effect:**
+
+- **Continued SFT entrenches** the reorganization: forgetting rises, Δ_newline
+  collapses further from base.
+- **Both KD regimes relax it** (forgetting drops, geometry moves back toward /
+  past base) — teacher supervision pulls the model off the SFT shortcut.
+- **On-policy is conservative; off-policy is aggressive.** On-policy makes small,
+  local moves (rhyme best-preserved at 0.942, only partial relaxation: KL
+  0.240→0.130, Δ_newline 0.388→0.487). Off-policy pulls hard toward the teacher's
+  organization (KL→0.060, Δ_newline→0.834, matching the main study's
+  teacher-supervised profile) at a larger behavior cost (rhyme 0.894).
+
+**Reinterpreting on-policy's "preservation."** On-policy training applies
+gradients at the student's *own* states, so it preserves whatever computation the
+model *currently* has — the base pathway when starting from base (→ less
+forgetting, the usual story), but equally an *SFT-induced reorganization* when
+starting from `corpus_sft` (→ it keeps more forgetting than off-policy here). The
+"preservation" is about staying near the current model's state distribution, not
+specifically about protecting the base pathway. (Single seed; replication
+in progress.)
+
 ## Figures
 
 | file | shows |
