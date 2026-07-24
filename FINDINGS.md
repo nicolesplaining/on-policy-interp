@@ -288,6 +288,13 @@ teacher, same divergence, but off-policy overwrites the mechanism fast while
 on-policy nudges it slowly** — a direct consequence of *where* the training states
 come from.
 
+**The relaxation is decodable-only, not causal.** Patching all three continuations
+shows peak C_newline = 0.00 and C_rhyme_word ≈ 0.99 — no regime induces a causal
+newline site. So off-policy moved the newline's *decodability* to the teacher's
+level (Δ_newline 0.83) without making it *causal*; the rhyme word stays the sole
+causal locus. Even aggressive relaxation is representational — the 4B still can't
+host the teacher's causal handoff (decodable ≠ causal, again).
+
 ## Figures
 
 | file | shows |
