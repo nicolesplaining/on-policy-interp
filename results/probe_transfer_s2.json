@@ -1,0 +1,12 @@
+{
+  "source": "mech/acts/corpus_sft_seed2_ckpt_100",
+  "offset": 0,
+  "layer": 4,
+  "source_self_acc": 0.6332916021347046,
+  "n_families": 136,
+  "transfer": {
+    "relax_onpolicy_seed2": 0.6049999594688416,
+    "relax_offpolicy_seed2": 0.5759096741676331,
+    "relax_moresft_seed2": 0.6100000143051147
+  }
+}
