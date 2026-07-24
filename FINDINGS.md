@@ -343,18 +343,16 @@ in the *direction* of within-layer updates, not their location. **On-policy
 distillation reaches a given function via a longer, functionally-compensatory path
 through weight space than off-policy.**
 
-**Caveat — cross-condition probe transfer complicates "representational"
-preservation.** Training a rhyme-family probe on the corpus_sft *start* and
-transferring it to each continuation (Section 13.5) gives, as a fraction of the
-start's own accuracy: continued-SFT 1.03, off-policy 0.88, **on-policy 0.81
-(worst)**. So on-policy's representation geometry aligns *least* with the start —
-the opposite of a naive "preserves representation" prediction, but consistent with
-the parameter dissociation: on-policy's large weight churn *rerotates* the
-representation into a new geometry (cross-transfer fails) while keeping the family
-decodable *within* its own space (Δ_newline preserved) and the output function
-preserved. Its preservation is **functional, achieved through a rerotated
-representation, not a frozen one.** (Noisy probe — self-acc 0.53 over 133
-families, single seed/source; treat as suggestive.)
+**Cross-condition probe transfer is inconclusive between on- and off-policy
+(3 seeds).** Training a rhyme-family probe on the corpus_sft *start* and
+transferring to each continuation (Section 13.5), as a fraction of the start's own
+accuracy: continued-SFT **0.99** (stays closest to start, as expected), on-policy
+**0.90**, off-policy **0.88**. On- and off-policy are within noise of each other,
+so — unlike the Δ_newline (function) and parameter-update (weights) findings, which
+have non-overlapping seed ranges — the *representation-geometry alignment* does
+**not** cleanly separate the two regimes. (An early single-seed run had on-policy
+lowest at 0.81; adding two seeds showed that was a fluke. Reported here to avoid
+over-claiming.)
 
 This is the crispest mechanistic answer to the goal: **on-policy and off-policy
 distillation — same teacher, same divergence — change a model's mechanism very
