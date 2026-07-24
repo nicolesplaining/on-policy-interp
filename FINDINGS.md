@@ -354,6 +354,14 @@ have non-overlapping seed ranges — the *representation-geometry alignment* doe
 lowest at 0.81; adding two seeds showed that was a fluke. Reported here to avoid
 over-claiming.)
 
+**What drives the churn? Prefix source, not rollout diversity (a null).** Sweeping
+the on-policy rollout temperature (0.3 / 0.7 / 1.2, from base) leaves both the
+weight-churn (param norm 1.63 / 1.65 / 1.59) and Δ_newline (0.78 / 0.78 / 0.76)
+essentially flat. So the dissociation does **not** scale with how diverse the
+student-visited states are — even near-greedy on-policy already produces the full
+churn. The on-policy-vs-off-policy difference is **categorical** (student- vs
+teacher-*generated* prefixes) rather than a continuous function of rollout entropy.
+
 This is the crispest mechanistic answer to the goal: **on-policy and off-policy
 distillation — same teacher, same divergence — change a model's mechanism very
 differently. Off-policy efficiently overwrites the computation toward the teacher
