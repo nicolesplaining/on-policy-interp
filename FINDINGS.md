@@ -295,6 +295,24 @@ level (Δ_newline 0.83) without making it *causal*; the rhyme word stays the sol
 causal locus. Even aggressive relaxation is representational — the 4B still can't
 host the teacher's causal handoff (decodable ≠ causal, again).
 
+**Replicates at 12B (scale-invariant).** Repeating the relaxation from
+corpus_sft-**12B** gives the same ordering. The Δ_newline *direction* flips
+(base-12B has *low* newline decodability 0.13 vs base-4B's high 0.56, so "toward
+base" is downward at 12B), but the scale-invariant quantity — *how far the
+mechanism moves from the start* — is identical in ordering:
+
+![Cross-scale](figures/fig14_relax_crossscale.png)
+
+| |Δ_newline moved from start| | 4B | 12B |
+|---|---|---|
+| continued SFT | 0.08 | 0.16 |
+| **on-policy KD** | **0.06** (least) | **0.04** (least) |
+| **off-policy KD** | **0.45** (most) | **0.37** (most) |
+
+At both scales on-policy moves the mechanism *least* and off-policy *most*, and
+off-policy reduces forgetting most (12B KL 0.31→0.12) while on-policy barely
+changes it (0.31→0.33). **On-policy's conservatism is scale-invariant.**
+
 ## Figures
 
 | file | shows |
@@ -310,6 +328,10 @@ host the teacher's causal handoff (decodable ≠ causal, again).
 | `figures/fig8_mech_vs_forget.png` | update concentration vs output drift (r≈0.99) |
 | `figures/fig9_matched.png` | forgetting at ckpt_100 vs matched performance (H1/H4 fair test) |
 | `figures/fig10_handoff_inheritance.png` | causal handoff H vs depth: 4B regimes vs 27B teacher (Section 16) |
+| `figures/fig11_selfdistill12b.png` | 12B self-distillation: on-policy under-reaches base |
+| `figures/fig12_relaxation.png` | relaxation from corpus_sft start (3 seeds): regime-dependent mechanism change |
+| `figures/fig13_relax_trajectory.png` | relaxation trajectory: off-policy jumps, on-policy drifts, SFT flat |
+| `figures/fig14_relax_crossscale.png` | on-policy moves mechanism least / off-policy most, at 4B and 12B |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,

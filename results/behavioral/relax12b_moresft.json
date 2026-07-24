@@ -1,0 +1,30 @@
+{
+  "model": "runs_relax12b/corpus_sft_seed0/ckpt_100",
+  "tag": "relax12b_moresft",
+  "temperature": 0.0,
+  "n_samples": 1,
+  "test_id": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.966,
+    "valid_couplet_rate": 0.966,
+    "ci_low": 0.9462281949738114,
+    "ci_high": 0.9786656605553865
+  },
+  "test_heldout_family": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.934,
+    "valid_couplet_rate": 0.934,
+    "ci_low": 0.9087600691405885,
+    "ci_high": 0.9526217619745875
+  },
+  "recovery": {
+    "n": 500,
+    "n_attempt": 500,
+    "rhyme_accuracy": 0.83,
+    "valid_couplet_rate": 0.83,
+    "ci_low": 0.7945876062593026,
+    "ci_high": 0.8603801455103012
+  }
+}
