@@ -343,6 +343,19 @@ in the *direction* of within-layer updates, not their location. **On-policy
 distillation reaches a given function via a longer, functionally-compensatory path
 through weight space than off-policy.**
 
+**Caveat — cross-condition probe transfer complicates "representational"
+preservation.** Training a rhyme-family probe on the corpus_sft *start* and
+transferring it to each continuation (Section 13.5) gives, as a fraction of the
+start's own accuracy: continued-SFT 1.03, off-policy 0.88, **on-policy 0.81
+(worst)**. So on-policy's representation geometry aligns *least* with the start —
+the opposite of a naive "preserves representation" prediction, but consistent with
+the parameter dissociation: on-policy's large weight churn *rerotates* the
+representation into a new geometry (cross-transfer fails) while keeping the family
+decodable *within* its own space (Δ_newline preserved) and the output function
+preserved. Its preservation is **functional, achieved through a rerotated
+representation, not a frozen one.** (Noisy probe — self-acc 0.53 over 133
+families, single seed/source; treat as suggestive.)
+
 This is the crispest mechanistic answer to the goal: **on-policy and off-policy
 distillation — same teacher, same divergence — change a model's mechanism very
 differently. Off-policy efficiently overwrites the computation toward the teacher
