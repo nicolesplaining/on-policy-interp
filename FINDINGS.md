@@ -359,6 +359,7 @@ the model's own evolving states. SFT entrenches whatever it started from.**
 | `figures/fig12_relaxation.png` | relaxation from corpus_sft start (3 seeds): regime-dependent mechanism change |
 | `figures/fig13_relax_trajectory.png` | relaxation trajectory: off-policy jumps, on-policy drifts, SFT flat |
 | `figures/fig14_relax_crossscale.png` | on-policy moves mechanism least / off-policy most, at 4B and 12B |
+| `figures/fig15_param_vs_function.png` | parameter-vs-function dissociation: on-policy churns weights most, changes mechanism least |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
