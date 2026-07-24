@@ -313,6 +313,33 @@ At both scales on-policy moves the mechanism *least* and off-policy *most*, and
 off-policy reduces forgetting most (12B KL 0.31→0.12) while on-policy barely
 changes it (0.31→0.33). **On-policy's conservatism is scale-invariant.**
 
+**Parameter-vs-function dissociation (the sharpest twist).** Measuring the raw
+*weight* update from the corpus_sft start (parameter L2 norm, 3 seeds) inverts the
+picture:
+
+![Parameter vs function](figures/fig15_param_vs_function.png)
+
+| from corpus_sft start | param update norm | mechanism change (Δ_newline moved) |
+|---|---|---|
+| continued SFT | 1.23 | 0.08 |
+| **on-policy KD** | **2.08 (largest)** | **0.06 (smallest)** |
+| off-policy KD | 1.77 | 0.46 |
+
+**On-policy churns the *weights the most* while changing the *computation the
+least*** — its updates are large but functionally compensatory, preserving the
+representation. Off-policy makes *smaller* weight changes that *efficiently*
+reorganize the computation toward the teacher. So on-policy's "preservation" is
+**functional, not parametric**: it is not that on-policy barely updates the
+model — it updates it heavily, but in directions that leave the computation
+intact. (Robust across 3 seeds; norms 2.08/1.77/1.23 with non-overlapping ranges.)
+
+This is the crispest mechanistic answer to the goal: **on-policy and off-policy
+distillation — same teacher, same divergence — change a model's mechanism very
+differently. Off-policy efficiently overwrites the computation toward the teacher
+(fast, small-weight, large-function); on-policy conservatively preserves the
+existing computation (slow, large-weight, small-function), because it trains on
+the model's own evolving states. SFT entrenches whatever it started from.**
+
 ## Figures
 
 | file | shows |
