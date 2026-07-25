@@ -90,6 +90,9 @@ def main():
     ap.add_argument("--ckpt_fracs", default=None,
                     help="Comma list of checkpoint fractions (e.g. '0,1' for "
                          "endpoints-only — avoids slow 54GB intermediate saves at 27B).")
+    ap.add_argument("--log_every", type=int, default=None, help="Override log interval.")
+    ap.add_argument("--max_response_len", type=int, default=None,
+                    help="Override max generated/response length.")
     args = ap.parse_args()
 
     cond = CONDITIONS[args.condition]
@@ -104,6 +107,10 @@ def main():
         cfg.lr = args.lr
     if args.rollout_temp is not None:
         cfg.rollout_temperature = args.rollout_temp
+    if args.log_every is not None:
+        cfg.log_every = args.log_every
+    if args.max_response_len is not None:
+        cfg.max_response_len = args.max_response_len
 
     set_seed(cfg.seed)
     out_dir = os.path.join(args.out_root, f"{cond.name}_seed{cfg.seed}")
