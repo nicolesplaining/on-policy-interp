@@ -18,7 +18,38 @@ Figures are in [`figures/`](figures/) (regenerate with
 The literature (Thinking Machines' *On-Policy Distillation*, GKD, and 2025–26
 follow-ups) frames the on-vs-off-policy difference **purely behaviorally** —
 exposure bias, mode-covering, sampling-distribution mismatch — and explicitly
-offers **no parameter-space or circuit-level account**. This project supplies one:
+offers **no parameter-space or circuit-level account**. This project supplies both.
+
+### (1) Circuit-level: off-policy distillation destroys a causal circuit that on-policy preserves
+
+Only **Gemma-3-27B** causally uses the rhyme-word→newline planning circuit
+(activation patching: peak causal newline-effect 0.62 mid-network, 11 causal
+layers, H = +0.61). We distill the **27B (as student)** toward the *handoff-less*
+`corpus_sft-4B` teacher (which rhymes 0.96 via a rhyme-word shortcut, no newline
+circuit), **on-policy vs off-policy, same teacher, same reverse-KL objective**,
+then patch the result:
+
+![27B circuit](figures/fig16_27b_circuit.png)
+
+| 27B student | val-rhyme | peak causal newline-C | # causal handoff layers |
+|---|---|---|---|
+| base (start) | 0.88 | 0.62 | 11 |
+| **+ on-policy** | 0.88 | **0.66 — PRESERVED** | **11** |
+| **+ off-policy** | 0.92 | **0.00 — DESTROYED** | **0** |
+
+**Off-policy distillation completely erases the 27B's causal planning circuit**
+(the newline becomes causally inert; the model reverts to the teacher's rhyme-word
+shortcut), while **on-policy leaves the circuit fully intact** (indistinguishable
+from base). Crucially this is **not** "on-policy changed less to less effect":
+off-policy reaches *higher* task accuracy (0.92 vs 0.88) — it achieves the task
+*by overwriting the circuit*, whereas on-policy reaches the task while keeping it.
+A clean, causal, circuit-level dissociation between the two training regimes —
+exactly what the behavioral literature lacks. (`scripts/run_27b_circuit.sh`;
+patching in `results/patching/circuit27b_*.json`. Single seed, but the effect is
+categorical: 0.66 vs 0.00, 11 vs 0 layers. On-policy needed lr 1e-6 + effective
+batch 16 to avoid reverse-KL collapse at 27B.)
+
+### (2) Parameter-space:
 
 **Parameter-vs-function dissociation.** Holding the teacher, the divergence, and
 the functional outcome fixed, **on-policy distillation moves ~45% *farther* in
@@ -433,6 +464,7 @@ the model's own evolving states. SFT entrenches whatever it started from.**
 | `figures/fig13_relax_trajectory.png` | relaxation trajectory: off-policy jumps, on-policy drifts, SFT flat |
 | `figures/fig14_relax_crossscale.png` | on-policy moves mechanism least / off-policy most, at 4B and 12B |
 | `figures/fig15_param_vs_function.png` | parameter-vs-function dissociation: on-policy churns weights most, changes mechanism least |
+| `figures/fig16_27b_circuit.png` | **off-policy destroys the 27B causal handoff, on-policy preserves it (circuit-level)** |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
