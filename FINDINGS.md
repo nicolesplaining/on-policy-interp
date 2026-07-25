@@ -11,6 +11,42 @@ across all three seeds.
 Figures are in [`figures/`](figures/) (regenerate with
 `python -m analysis.make_figures --seeds 0 1 2`).
 
+---
+
+## ★ Headline: a publishable mechanistic difference between on-policy and off-policy distillation
+
+The literature (Thinking Machines' *On-Policy Distillation*, GKD, and 2025–26
+follow-ups) frames the on-vs-off-policy difference **purely behaviorally** —
+exposure bias, mode-covering, sampling-distribution mismatch — and explicitly
+offers **no parameter-space or circuit-level account**. This project supplies one:
+
+**Parameter-vs-function dissociation.** Holding the teacher, the divergence, and
+the functional outcome fixed, **on-policy distillation moves ~45% *farther* in
+weight space than off-policy for the *same* mechanistic change.** From base (3
+seeds, all reaching Δ_newline ≈ 0.81) the weight-update norm is **2.00
+(on-policy) vs 1.38 (off-policy)**, non-overlapping — and it replicates from
+**three distinct starts** (base 2.00/1.38, corpus_sft 2.08/1.77, teacher_sft
+1.61/1.11) and at **12B**. This *inverts* the field's intuition that off-policy is
+the one that "diverges via non-zero gradient updates": on-policy's updates are
+*larger*, not smaller — but **functionally compensatory**, so the computation is
+preserved while the weights travel a longer path. On-policy's preservation is
+therefore **functional, not parametric**. (fig15; §"Parameter-vs-function".)
+
+**Complementary, robust:** off-policy *snaps* to the teacher's mechanism within
+~10 steps while on-policy *drifts* slowly (fig13); on-policy consistently changes
+the mechanism least, off-policy most (figs 12, 14).
+
+**Honest boundaries:** the temperature sweep shows the churn is driven by the
+*prefix source* (student- vs teacher-generated states), not rollout diversity (a
+null); the internal exposure-bias measurement (`eval/exposure_bias.py`) is only
+*suggestive* on this task — off-policy degrades ~19% at its own states vs
+on-policy ~14%, direction-consistent over 3 seeds but nearly-overlapping ranges,
+because couplet generations are too short to accumulate error; and no 4B/12B
+develops the teacher's *causal* handoff, so the differences are decodable-level.
+The strongest untested extension is **27B-as-student** (only the 27B has the
+causal circuit) — infra-blocked here by slow naive-MP rollout generation; it
+needs vLLM-accelerated on-policy sampling.
+
 **The two headline results:**
 
 ![Forgetting](figures/fig1_forgetting.png)

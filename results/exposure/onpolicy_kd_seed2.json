@@ -1,0 +1,8 @@
+{
+  "tag": "onpolicy_kd_seed2",
+  "student": "runs/onpolicy_kd_seed2/ckpt_100",
+  "n": 150,
+  "kl_at_teacher_states": 0.4770858139793078,
+  "kl_at_student_states": 0.5507807226975759,
+  "exposure_gap": 0.07369490871826812
+}

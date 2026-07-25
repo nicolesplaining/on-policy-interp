@@ -1,0 +1,8 @@
+{
+  "tag": "teacher_kd_seed2",
+  "student": "runs/teacher_kd_seed2/ckpt_100",
+  "n": 150,
+  "kl_at_teacher_states": 0.3531499963005384,
+  "kl_at_student_states": 0.4044634974996249,
+  "exposure_gap": 0.05131350119908651
+}

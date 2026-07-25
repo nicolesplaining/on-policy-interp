@@ -87,6 +87,9 @@ def main():
     ap.add_argument("--lr", type=float, default=None, help="Override learning rate.")
     ap.add_argument("--rollout_temp", type=float, default=None,
                     help="Override on-policy rollout sampling temperature.")
+    ap.add_argument("--ckpt_fracs", default=None,
+                    help="Comma list of checkpoint fractions (e.g. '0,1' for "
+                         "endpoints-only — avoids slow 54GB intermediate saves at 27B).")
     args = ap.parse_args()
 
     cond = CONDITIONS[args.condition]
@@ -165,7 +168,9 @@ def main():
 
     optim = C.build_optimizer(student, cfg, opt8bit=args.opt8bit)
     sched = C.build_scheduler(optim, cfg)
-    ckpt_map = C.checkpoint_steps(CHECKPOINT_FRACTIONS, cfg.max_steps)
+    fracs = ([float(x) for x in args.ckpt_fracs.split(",")]
+             if args.ckpt_fracs else CHECKPOINT_FRACTIONS)
+    ckpt_map = C.checkpoint_steps(fracs, cfg.max_steps)
 
     history = {"condition": cond.name, "seed": cfg.seed, "steps": [], "loss": [],
                "val_rhyme": [], "checkpoints": []}
