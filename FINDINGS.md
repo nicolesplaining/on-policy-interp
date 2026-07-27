@@ -34,11 +34,14 @@ the earlier confound. Then patch:
 
 ![Matched 27B circuit](figures/fig17_27b_matched.png)
 
-| 27B (matched fwd-KL, ~4.2 weight-motion) | val-rhyme | peak causal newline-C | # handoff layers |
+| 27B (matched fwd-KL, ~4.2 weight-motion) | val-rhyme | peak causal newline-C (seed0/seed1) | # handoff layers |
 |---|---|---|---|
 | base | 0.88 | 0.62 | 11 |
-| **on-policy** | 0.58 | **0.575 — PRESERVED** | **11** |
-| **off-policy** | 0.965 | **0.250 — mostly destroyed** | **1** |
+| **on-policy** | 0.58 / 0.56 | **0.575 / 0.412 — PRESERVED** | **11 / 10** |
+| **off-policy** | 0.965 / 0.96 | **0.250 / 0.013 — DESTROYED** | **1 / 0** |
+
+**Replicated across 2 seeds** (weight-motion on 4.14/4.16 vs off 4.28/4.33 — matched
+each time).
 
 **At the same objective, LR, and total weight-motion, off-policy dismantles the
 causal circuit while on-policy keeps it intact.** The deeper reading: the task has
@@ -57,8 +60,9 @@ that sank the first attempt, fig16 — where on-policy used lr 1e-6 and moved 10
 less, 0.38 vs 3.93 — is resolved here); *not* matched on final accuracy (0.58 vs
 0.965), which is interpreted as part of the finding rather than controlled away.
 Reverse-KL on-policy is unstable at 27B (collapses at lr 1e-5); forward-KL is what
-made the matched run possible. Single seed shown; a confirmation seed is running.
-(`scripts/run_27b_matched.sh`; `results/patching/matched27b_*.json`.)
+made the matched run possible. **Replicated across 2 seeds** (see table).
+(`scripts/run_27b_matched.sh`, `run_27b_matched_s1.sh`;
+`results/patching/matched27b_*.json`.)
 
 ### (2) Parameter-space — the robust finding:
 
