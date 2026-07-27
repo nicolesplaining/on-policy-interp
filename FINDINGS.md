@@ -18,38 +18,32 @@ Figures are in [`figures/`](figures/) (regenerate with
 The literature (Thinking Machines' *On-Policy Distillation*, GKD, and 2025–26
 follow-ups) frames the on-vs-off-policy difference **purely behaviorally** —
 exposure bias, mode-covering, sampling-distribution mismatch — and explicitly
-offers **no parameter-space or circuit-level account**. This project supplies both.
+offers **no parameter-space or circuit-level account**. This project supplies one
+robust parameter-space finding (below); the circuit-level attempt is **confounded
+and inconclusive** (recorded honestly, not as a result).
 
-### (1) Circuit-level: off-policy distillation destroys a causal circuit that on-policy preserves
+### (1) Circuit-level attempt — CONFOUNDED, not a valid result
 
-Only **Gemma-3-27B** causally uses the rhyme-word→newline planning circuit
-(activation patching: peak causal newline-effect 0.62 mid-network, 11 causal
-layers, H = +0.61). We distill the **27B (as student)** toward the *handoff-less*
-`corpus_sft-4B` teacher (which rhymes 0.96 via a rhyme-word shortcut, no newline
-circuit), **on-policy vs off-policy, same teacher, same reverse-KL objective**,
-then patch the result:
+We distilled the **27B (the only model with a causal rhyme-word→newline handoff)**
+toward the handoff-less `corpus_sft-4B` teacher, on-policy vs off-policy, then
+patched. The raw picture *looked* dramatic — off-policy peak causal newline-C
+0.62→**0.00** (handoff destroyed), on-policy 0.62→**0.66** (preserved), fig16.
+**But it does not survive scrutiny:** the two runs used very different
+hyperparameters (on-policy lr 1e-6 to avoid reverse-KL collapse; off-policy
+lr 1e-5), and the resulting **weight-change magnitudes differ ~10×** —
+on-policy update-norm **0.379** vs off-policy **3.933**. So "on-policy preserved
+the circuit" is, to first order, just "**on-policy barely moved**." It is *not* a
+clean on-vs-off-policy test; it is a magnitude artifact of mismatched training.
 
-![27B circuit](figures/fig16_27b_circuit.png)
+A valid version needs a *matched* comparison (same LR / effort, or matched
+weight-motion, or matched performance where both move comparably). That is
+currently blocked because **on-policy reverse-KL is unstable at 27B**: at the
+off-policy LR it collapses (val-rhyme 0.02), and at a safe LR it barely trains
+(0.379). Producing an on-policy 27B that moves as much as off-policy *and* stays
+coherent is the open problem. Until then this is filed as **inconclusive**.
+(`scripts/run_27b_circuit.sh`; fig16; drift in `results/param_drift/drift27b_*`.)
 
-| 27B student | val-rhyme | peak causal newline-C | # causal handoff layers |
-|---|---|---|---|
-| base (start) | 0.88 | 0.62 | 11 |
-| **+ on-policy** | 0.88 | **0.66 — PRESERVED** | **11** |
-| **+ off-policy** | 0.92 | **0.00 — DESTROYED** | **0** |
-
-**Off-policy distillation completely erases the 27B's causal planning circuit**
-(the newline becomes causally inert; the model reverts to the teacher's rhyme-word
-shortcut), while **on-policy leaves the circuit fully intact** (indistinguishable
-from base). Crucially this is **not** "on-policy changed less to less effect":
-off-policy reaches *higher* task accuracy (0.92 vs 0.88) — it achieves the task
-*by overwriting the circuit*, whereas on-policy reaches the task while keeping it.
-A clean, causal, circuit-level dissociation between the two training regimes —
-exactly what the behavioral literature lacks. (`scripts/run_27b_circuit.sh`;
-patching in `results/patching/circuit27b_*.json`. Single seed, but the effect is
-categorical: 0.66 vs 0.00, 11 vs 0 layers. On-policy needed lr 1e-6 + effective
-batch 16 to avoid reverse-KL collapse at 27B.)
-
-### (2) Parameter-space:
+### (2) Parameter-space — the robust finding:
 
 **Parameter-vs-function dissociation.** Holding the teacher, the divergence, and
 the functional outcome fixed, **on-policy distillation moves ~45% *farther* in
@@ -464,7 +458,7 @@ the model's own evolving states. SFT entrenches whatever it started from.**
 | `figures/fig13_relax_trajectory.png` | relaxation trajectory: off-policy jumps, on-policy drifts, SFT flat |
 | `figures/fig14_relax_crossscale.png` | on-policy moves mechanism least / off-policy most, at 4B and 12B |
 | `figures/fig15_param_vs_function.png` | parameter-vs-function dissociation: on-policy churns weights most, changes mechanism least |
-| `figures/fig16_27b_circuit.png` | **off-policy destroys the 27B causal handoff, on-policy preserves it (circuit-level)** |
+| `figures/fig16_27b_circuit.png` | 27B circuit attempt — CONFOUNDED (on-policy moved 10× less weight; magnitude artifact, not a valid on/off-policy result) |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
