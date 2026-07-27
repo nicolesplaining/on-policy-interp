@@ -22,26 +22,43 @@ offers **no parameter-space or circuit-level account**. This project supplies on
 robust parameter-space finding (below); the circuit-level attempt is **confounded
 and inconclusive** (recorded honestly, not as a result).
 
-### (1) Circuit-level attempt — CONFOUNDED, not a valid result
+### (1) Circuit-level: at MATCHED weight-motion, off-policy destroys a causal circuit that on-policy preserves
 
-We distilled the **27B (the only model with a causal rhyme-word→newline handoff)**
-toward the handoff-less `corpus_sft-4B` teacher, on-policy vs off-policy, then
-patched. The raw picture *looked* dramatic — off-policy peak causal newline-C
-0.62→**0.00** (handoff destroyed), on-policy 0.62→**0.66** (preserved), fig16.
-**But it does not survive scrutiny:** the two runs used very different
-hyperparameters (on-policy lr 1e-6 to avoid reverse-KL collapse; off-policy
-lr 1e-5), and the resulting **weight-change magnitudes differ ~10×** —
-on-policy update-norm **0.379** vs off-policy **3.933**. So "on-policy preserved
-the circuit" is, to first order, just "**on-policy barely moved**." It is *not* a
-clean on-vs-off-policy test; it is a magnitude artifact of mismatched training.
+Only **Gemma-3-27B** causally uses the rhyme-word→newline planning circuit (peak
+causal newline-effect 0.62 mid-network, 11 causal layers). We distill the 27B
+toward the *handoff-less* `corpus_sft-4B` teacher (rhymes 0.96 via a rhyme-word
+shortcut) with **everything matched except the prefix source** — forward-KL,
+lr 1e-5, effective batch 16, 80 steps for both — which also **matches the total
+weight-motion** (on-policy update-norm **4.14** vs off-policy **4.28**), removing
+the earlier confound. Then patch:
 
-A valid version needs a *matched* comparison (same LR / effort, or matched
-weight-motion, or matched performance where both move comparably). That is
-currently blocked because **on-policy reverse-KL is unstable at 27B**: at the
-off-policy LR it collapses (val-rhyme 0.02), and at a safe LR it barely trains
-(0.379). Producing an on-policy 27B that moves as much as off-policy *and* stays
-coherent is the open problem. Until then this is filed as **inconclusive**.
-(`scripts/run_27b_circuit.sh`; fig16; drift in `results/param_drift/drift27b_*`.)
+![Matched 27B circuit](figures/fig17_27b_matched.png)
+
+| 27B (matched fwd-KL, ~4.2 weight-motion) | val-rhyme | peak causal newline-C | # handoff layers |
+|---|---|---|---|
+| base | 0.88 | 0.62 | 11 |
+| **on-policy** | 0.58 | **0.575 — PRESERVED** | **11** |
+| **off-policy** | 0.965 | **0.250 — mostly destroyed** | **1** |
+
+**At the same objective, LR, and total weight-motion, off-policy dismantles the
+causal circuit while on-policy keeps it intact.** The deeper reading: the task has
+two solutions — the newline-planning *circuit* (base 27B) or the rhyme-word
+*shortcut* (the 4B teacher). **Off-policy converts the 27B to the shortcut by
+destroying the circuit** (reaching the teacher's 0.96). **On-policy structurally
+cannot make that conversion** — training on states where the circuit is *active*,
+its gradients can't remove it, so it preserves the circuit and *therefore fails to
+fully adopt the shortcut* (0.58). Prefix source, at matched effort, decides
+whether a causal circuit survives distillation — and on-policy's circuit
+preservation actively *prevents* it from learning a shortcut that requires
+circuit destruction.
+
+*Honest scope:* matched on objective/LR/batch/steps/weight-motion (the confound
+that sank the first attempt, fig16 — where on-policy used lr 1e-6 and moved 10×
+less, 0.38 vs 3.93 — is resolved here); *not* matched on final accuracy (0.58 vs
+0.965), which is interpreted as part of the finding rather than controlled away.
+Reverse-KL on-policy is unstable at 27B (collapses at lr 1e-5); forward-KL is what
+made the matched run possible. Single seed shown; a confirmation seed is running.
+(`scripts/run_27b_matched.sh`; `results/patching/matched27b_*.json`.)
 
 ### (2) Parameter-space — the robust finding:
 
@@ -458,7 +475,8 @@ the model's own evolving states. SFT entrenches whatever it started from.**
 | `figures/fig13_relax_trajectory.png` | relaxation trajectory: off-policy jumps, on-policy drifts, SFT flat |
 | `figures/fig14_relax_crossscale.png` | on-policy moves mechanism least / off-policy most, at 4B and 12B |
 | `figures/fig15_param_vs_function.png` | parameter-vs-function dissociation: on-policy churns weights most, changes mechanism least |
-| `figures/fig16_27b_circuit.png` | 27B circuit attempt — CONFOUNDED (on-policy moved 10× less weight; magnitude artifact, not a valid on/off-policy result) |
+| `figures/fig16_27b_circuit.png` | 27B circuit — first attempt, CONFOUNDED (on-policy moved 10× less weight); superseded by fig17 |
+| `figures/fig17_27b_matched.png` | **27B circuit at MATCHED weight-motion — off-policy destroys the causal handoff, on-policy preserves it** |
 
 _Artifacts: per-condition JSON under `results/{behavioral,diversity,forgetting,
 param_drift,probe,patching}/`, aggregated `results/synthesis_3seed.json`,
